@@ -1,0 +1,6 @@
+# 🎭 Facehugger — Configuração Full Docs (tudo versionado)
+name: "full-docs"
+mode: "semi"                    # Guiado com confirmações
+injection: "completa"           # Tudo versionado
+tracker: "github"
+agent_tool: "claude-code"

@@ -1,0 +1,6 @@
+# 🎭 Facehugger — Configuração padrão
+name: "default"
+mode: "semi"                    # rapido | semi | fresco
+injection: "principal"          # silenciosa | principal | completa
+tracker: "local"                # github | gitlab | local
+agent_tool: "claude-code"       # claude-code | cursor | windsurf | outro

@@ -1,0 +1,27 @@
+# 🎭 Manifesto: Data Pipeline
+name: data-pipeline
+label: Data Pipeline
+description: Configuração para ETLs, processamento de dados, filas
+tags: [data, etl, pipeline, streaming, batch]
+
+rules:
+  - book: designing-data-intensive-applications
+    version: mini
+    priority: high
+  - book: release-it
+    version: mini
+    priority: high
+  - book: working-effectively-with-legacy-code
+    version: nano
+    priority: medium
+
+recommended_skills:
+  essential:
+    - diagnose
+    - tdd
+    - grill-with-docs
+    - handoff
+    - grill-me
+  optional:
+    - zoom-out
+    - caveman

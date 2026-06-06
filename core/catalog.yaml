@@ -1,0 +1,129 @@
+# 📚 Facehugger — Catálogo de Regras de Engenharia
+#
+# Livros disponíveis para inclusão em manifestos.
+# Cada livro tem 3 versões:
+#   - full: regras completas (máximo rigor)
+#   - mini: essenciais (recomendado)
+#   - nano: compactas (contexto apertado)
+#
+# Paths relativos ao submodule em vendor/agent-rules-books/
+
+books:
+  - id: clean-architecture
+    label: Clean Architecture
+    author: Robert C. Martin
+    description: Sistemas com boundaries estáveis, separação de políticas de negócio de detalhes
+    tags: [architecture, backend, api, design]
+    path: clean-architecture/clean-architecture
+    versions: [full, mini, nano]
+    default_version: mini
+    priority_weight: 8
+
+  - id: working-effectively-with-legacy-code
+    label: Working Effectively with Legacy Code
+    author: Michael Feathers
+    description: Como mudar código difícil com segurança — characterization tests, seams, sprout method
+    tags: [legacy, refactoring, testing, backend, mobile, web]
+    path: working-effectively-with-legacy-code/working-effectively-with-legacy-code
+    versions: [full, mini, nano]
+    default_version: mini
+    priority_weight: 9
+
+  - id: clean-code
+    label: Clean Code
+    author: Robert C. Martin
+    description: Nomenclatura, funções pequenas, responsabilidades, testes, simplicidade
+    tags: [general, readability, quality]
+    path: clean-code/clean-code
+    versions: [full, mini, nano]
+    default_version: mini
+    priority_weight: 7
+
+  - id: a-philosophy-of-software-design
+    label: A Philosophy of Software Design
+    author: John Ousterhout
+    description: Combate à complexidade através de módulos profundos, interfaces simples
+    tags: [architecture, design, api, general]
+    path: a-philosophy-of-software-design/a-philosophy-of-software-design
+    versions: [full, mini, nano]
+    default_version: mini
+    priority_weight: 8
+
+  - id: domain-driven-design-distilled
+    label: Domain-Driven Design Distilled
+    author: Vaughn Vernon
+    description: DDD prático — subdomínios, bounded contexts, context mapping
+    tags: [architecture, domain, backend, api]
+    path: domain-driven-design-distilled/domain-driven-design-distilled
+    versions: [full, mini, nano]
+    default_version: mini
+    priority_weight: 7
+
+  - id: the-pragmatic-programmer
+    label: The Pragmatic Programmer
+    author: Andrew Hunt & David Thomas
+    description: Responsabilidade, DRY no nível do conhecimento, ortogonalidade, automação
+    tags: [general, practices, quality]
+    path: the-pragmatic-programmer/the-pragmatic-programmer
+    versions: [full, mini, nano]
+    default_version: mini
+    priority_weight: 6
+
+  - id: refactoring
+    label: Refactoring
+    author: Martin Fowler
+    description: Melhorar código existente sem mudar comportamento
+    tags: [refactoring, quality, testing, general]
+    path: refactoring/refactoring
+    versions: [full, mini, nano]
+    default_version: mini
+    priority_weight: 7
+
+  - id: refactoring-guru
+    label: Refactoring.Guru
+    description: Catálogo prático de code smells e técnicas de refatoração
+    tags: [refactoring, quality, patterns, design]
+    path: refactoring-guru/refactoring-guru
+    versions: [full, mini, nano]
+    default_version: mini
+    priority_weight: 6
+
+  - id: release-it
+    label: Release It!
+    author: Michael T. Nygard
+    description: Sistemas que sobrevivem em produção — circuit breakers, bulkheads, timeouts
+    tags: [production, resilience, infra, devops, backend]
+    path: release-it/release-it
+    versions: [full, mini, nano]
+    default_version: mini
+    priority_weight: 8
+
+  - id: designing-data-intensive-applications
+    label: Designing Data-Intensive Applications
+    author: Martin Kleppmann
+    description: Confiabilidade, escalabilidade, consistência, replicação, streams
+    tags: [data, database, backend, infra, architecture]
+    path: designing-data-intensive-applications/designing-data-intensive-applications
+    versions: [full, mini, nano]
+    default_version: mini
+    priority_weight: 8
+
+  - id: code-complete
+    label: Code Complete
+    author: Steve McConnell
+    description: Práticas de construção — design de rotinas, variáveis, classes
+    tags: [general, quality, practices]
+    path: code-complete/code-complete
+    versions: [full, mini, nano]
+    default_version: mini
+    priority_weight: 5
+
+  - id: implementing-domain-driven-design
+    label: Implementing Domain-Driven Design
+    author: Vaughn Vernon
+    description: DDD na prática — aggregates, domain events, context mapping
+    tags: [architecture, domain, backend, implementation]
+    path: implementing-domain-driven-design/implementing-domain-driven-design
+    versions: [full, mini, nano]
+    default_version: mini
+    priority_weight: 7

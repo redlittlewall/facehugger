@@ -1,0 +1,6 @@
+# 🎭 Facehugger — Configuração Stealth (modo silencioso rápido)
+name: "stealth"
+mode: "rapido"                  # Sem perguntas
+injection: "silenciosa"         # Nada no git
+tracker: "local"
+agent_tool: "claude-code"

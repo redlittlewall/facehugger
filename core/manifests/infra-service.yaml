@@ -1,0 +1,23 @@
+# 🎭 Manifesto: Infra/Serviço
+name: infra-service
+label: Infra/Serviço
+description: Configuração para gateways, proxies, serviços de infraestrutura
+tags: [infra, devops, nginx, proxy, gateway]
+
+rules:
+  - book: release-it
+    version: mini
+    priority: high
+  - book: clean-code
+    version: nano
+    priority: medium
+
+recommended_skills:
+  essential:
+    - diagnose
+    - grill-with-docs
+    - handoff
+    - grill-me
+  optional:
+    - tdd
+    - zoom-out

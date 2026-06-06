@@ -1,0 +1,645 @@
+#!/usr/bin/env bash
+#
+# 🎭 Facehugger — Entrypoint CLI
+#
+# Uso:
+#   ./facehugger catch <caminho-do-projeto> [opções]
+#   ./facehugger config
+#   ./facehugger --help
+#
+# Requerimentos: bash, git, grep, find
+
+set -euo pipefail
+
+FACEHUGGER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+VERSION="0.1.0"
+
+# ─── Core paths ────────────────────────────────────────────────────────────
+DETECT_SCRIPT="$FACEHUGGER_DIR/core/detectors/detect.sh"
+
+# ─── Helpers ───────────────────────────────────────────────────────────────
+
+show_help() {
+  cat <<EOF
+🎭 Facehugger v$VERSION
+
+Uso:
+  ./facehugger catch <path>     Configura um projeto alvo
+  ./facehugger config           Gerencia configurações
+  ./facehugger --help           Mostra esta ajuda
+  ./facehugger --version        Mostra a versão
+  ./facehugger --dry-run <cmd>  Mostra o que seria gerado sem escrever
+
+Opções do catch:
+  --mode <rapido|semi|fresh>    Modo de execução
+  --config <nome>               Perfil de configuração
+
+EOF
+  exit 0
+}
+
+show_version() {
+  echo "🎭 Facehugger v$VERSION"
+  exit 0
+}
+
+# ─── Config loading ────────────────────────────────────────────────────────
+
+load_config() {
+  local config_name="${1:-default}"
+  local config_file="$FACEHUGGER_DIR/core/configs/${config_name}.yaml"
+  local local_config="$FACEHUGGER_DIR/core/config.local.yaml"
+  local mode="semi"
+  local injection="principal"
+  local tracker="local"
+  local agent_tool="claude-code"
+
+  # Carrega config nomeada
+  if [ -f "$config_file" ]; then
+    # Parse YAML simplificado (apenas campos conhecidos)
+    while IFS=': ' read -r key value; do
+      case "$key" in
+        "mode") mode="$value" ;;
+        "injection") injection="$value" ;;
+        "tracker") tracker="$value" ;;
+        "agent_tool") agent_tool="$value" ;;
+      esac
+    done < <(grep -E '^(mode|injection|tracker|agent_tool):' "$config_file")
+  fi
+
+  # Sobrescreve com config local
+  if [ -f "$local_config" ]; then
+    while IFS=': ' read -r key value; do
+      case "$key" in
+        "mode") mode="$value" ;;
+        "injection") injection="$value" ;;
+        "tracker") tracker="$value" ;;
+        "agent_tool") agent_tool="$value" ;;
+      esac
+    done < <(grep -E '^(mode|injection|tracker|agent_tool):' "$local_config")
+  fi
+
+  echo "$mode|$injection|$tracker|$agent_tool"
+}
+
+# ─── UI helpers ────────────────────────────────────────────────────────────
+
+confirm() {
+  local prompt="$1"
+  local default="${2:-y}"
+  local yn
+  if [ "$default" = "y" ]; then
+    read -r -p "$prompt [Y/n] " yn || true; yn="${yn:-y}"
+    case "$yn" in
+      [nN]*) return 1 ;;
+      *) return 0 ;;
+    esac
+  else
+    read -r -p "$prompt [y/N] " yn || true; yn="${yn:-n}"
+    case "$yn" in
+      [yY]*) return 0 ;;
+      *) return 1 ;;
+    esac
+  fi
+}
+
+menu_select() {
+  local prompt="$1"
+  shift
+  local options=("$@")
+  local i=1
+  for opt in "${options[@]}"; do
+    echo "  [$i] $opt"
+    i=$((i + 1))
+  done
+  local choice
+  read -r -p "$prompt [1-$((i - 1))]: " choice || true; choice="${choice:-}" || true
+  echo "${choice:-1}"
+}
+
+# ─── Banner ────────────────────────────────────────────────────────────────
+
+show_banner() {
+  echo ""
+  echo "  ╔═══════════════════════════════════════╗"
+  echo "  ║        🎭  FACEHUGGER  v$VERSION          ║"
+  echo "  ║  Acoplando, injetando e vazando...   ║"
+  echo "  ╚═══════════════════════════════════════╝"
+  echo ""
+}
+
+# ─── Mode selection ────────────────────────────────────────────────────────
+
+select_mode() {
+  echo ""
+  echo "🎭 Facehugger — Catch"
+  echo ""
+  echo "Como quer configurar esta execução?"
+  echo ""
+  echo "  [1] ⚡ Rápido (usar config existente)"
+  echo "      Usa as configurações salvas sem perguntar nada."
+  echo ""
+  echo "  [2] ✨ Guiado (config existente + confirmações)"
+  echo "      Usa a config como base, mas mostra cada escolha"
+  echo "      e pergunta confirmação antes de prosseguir."
+  echo ""
+  echo "  [3] 🆕 Fresco (ignorar config, perguntar tudo)"
+  echo "      Ignora qualquer config salva e pergunta cada"
+  echo "      decisão do zero."
+  echo ""
+  echo "  [4] ⚙️  Gerenciar Config"
+  echo "      Criar, selecionar ou editar configurações."
+  echo ""
+
+  local choice
+  read -r -p "  Escolha [1-4] (Enter=2): " choice || true; choice="${choice:-}"
+  choice="${choice:-2}"
+
+  case "$choice" in
+    1) echo "rapido" ;;
+    2) echo "semi" ;;
+    3) echo "fresh" ;;
+    4)
+      manage_config
+      select_mode
+      ;;
+    *) echo "semi" ;;
+  esac
+}
+
+# ─── Config management ────────────────────────────────────────────────────
+
+manage_config() {
+  echo ""
+  echo "⚙️  Gerenciar Configurações"
+  echo ""
+
+  local configs
+  configs=$(ls "$FACEHUGGER_DIR/core/configs/"*.yaml 2>/dev/null | xargs -n1 basename | sed 's/\.yaml$//' | grep -v '^$' || echo "nenhuma")
+
+  if [ "$configs" = "nenhuma" ]; then
+    echo "  Nenhuma configuração encontrada."
+    echo ""
+    if confirm "  Criar configuração default?"; then
+      create_config "default"
+    fi
+    return
+  fi
+
+  echo "  Configurações disponíveis:"
+  local i=1
+  local config_list=()
+  while IFS= read -r cfg; do
+    echo "    [$i] $cfg"
+    config_list+=("$cfg")
+    i=$((i + 1))
+  done < <(echo "$configs")
+
+  echo ""
+  echo "  [C] Criar nova configuração"
+  echo "  [S] Selecionar configuração ativa"
+  echo "  [E] Editar configuração existente"
+  echo "  [D] Deletar configuração"
+  echo "  [V] Voltar"
+  echo ""
+
+  local action
+  read -r -p "  Escolha: " action
+  case "$action" in
+    [cC]) create_config ;;
+    [sS]) select_active_config ;;
+    [eE]) edit_config ;;
+    [dD]) delete_config ;;
+    *) return ;;
+  esac
+}
+
+create_config() {
+  local name="${1:-}"
+  if [ -z "$name" ]; then
+    read -r -p "  Nome da configuração: " name
+  fi
+  [ -z "$name" ] && name="default"
+
+  echo ""
+  echo "  Configurando '$name':"
+
+  read -r -p "  Modo de execução (rapido/semi/fresh) [semi]: " mode
+  mode="${mode:-semi}"
+
+  read -r -p "  Modo de injeção (silenciosa/principal/completa) [principal]: " injection
+  injection="${injection:-principal}"
+
+  read -r -p "  Issue tracker (github/gitlab/local) [local]: " tracker
+  tracker="${tracker:-local}"
+
+  read -r -p "  Ferramenta IA (claude-code/cursor/windsurf/outro) [claude-code]: " agent_tool
+  agent_tool="${agent_tool:-claude-code}"
+
+  cat > "$FACEHUGGER_DIR/core/configs/${name}.yaml" <<YAML
+# 🎭 Facehugger — Configuração: $name
+name: "$name"
+mode: "$mode"
+injection: "$injection"
+tracker: "$tracker"
+agent_tool: "$agent_tool"
+YAML
+
+  echo ""
+  echo "  ✅ Configuração '$name' criada!"
+}
+
+select_active_config() {
+  local configs
+  configs=$(ls "$FACEHUGGER_DIR/core/configs/"*.yaml 2>/dev/null | xargs -n1 basename | sed 's/\.yaml$//' | grep -v '^$' || echo "")
+  [ -z "$configs" ] && { echo "  Nenhuma config disponível."; return; }
+
+  local i=1
+  local config_list=()
+  while IFS= read -r cfg; do
+    echo "    [$i] $cfg"
+    config_list+=("$cfg")
+    i=$((i + 1))
+  done < <(echo "$configs")
+
+  local choice
+  read -r -p "  Selecionar [#]: " choice || true; choice="${choice:-}"
+  local selected="${config_list[$((choice - 1))]}"
+  if [ -n "$selected" ]; then
+    cat > "$FACEHUGGER_DIR/core/config.local.yaml" <<YAML
+# 🎭 Configuração ativa (sobrescrita local)
+active_config: "$selected"
+YAML
+    echo "  ✅ Configuração '$selected' ativada!"
+  fi
+}
+
+# ─── Catch command ────────────────────────────────────────────────────────
+
+cmd_catch() {
+  local target_path="$1"
+  local mode_override="${2:-}"
+  shift 2 2>/dev/null || true
+
+  show_banner
+
+  # Resolve caminho absoluto
+  target_path="$(cd "$target_path" 2>/dev/null && pwd)" || {
+    echo "❌ Erro: diretório '$target_path' não encontrado"
+    exit 1
+  }
+
+  echo "🔍 Alvo: $target_path"
+  echo ""
+
+  # Detecta modo de execução
+  local mode="$mode_override"
+  if [ -z "$mode" ]; then
+    IFS='|' read -r mode injection tracker agent_tool <<< "$(load_config "${config_name:-default}")"
+    mode=$(select_mode)
+  fi
+
+  echo "  Modo: $mode"
+  echo ""
+
+  # ─── Fase 1: Detecção ────────────────────────────────────────
+  echo "🔎 Detectando tipo do projeto..."
+
+  local detect_result
+  if [ -f "$DETECT_SCRIPT" ]; then
+    detect_result=$(bash "$DETECT_SCRIPT" "$target_path")
+  else
+    detect_result="none|||none"
+  fi
+
+  IFS='|' read -r detected_type detected_lang detected_framework detected_confidence <<< "$detect_result"
+
+  if [ "$detected_confidence" = "none" ] || [ "$detected_confidence" = "low" ]; then
+    echo "  ⚠️  Nenhum arquivo de configuração conhecido encontrado."
+    # Fallback manual — perguntar ao usuário
+    echo ""
+    echo "  Vamos configurar manualmente:"
+
+    echo "  Qual o tipo do projeto?"
+    local type_options=("Backend API" "Mobile App" "Web Frontend" "Infra/Serviço" "Data Pipeline" "Sistema Legado")
+    local type_choice=$(menu_select "  Escolha" "${type_options[@]}")
+
+    case "$type_choice" in
+      1) detected_type="backend-api"; detected_lang="TypeScript" ;;
+      2) detected_type="mobile-app"; detected_lang="Dart" ;;
+      3) detected_type="web-frontend"; detected_lang="JavaScript" ;;
+      4) detected_type="infra-service"; detected_lang="YAML" ;;
+      5) detected_type="data-pipeline"; detected_lang="Python" ;;
+      6) detected_type="legacy-system"; detected_lang="Unknown" ;;
+      *) detected_type="backend-api"; detected_lang="TypeScript" ;;
+    esac
+  else
+    echo "  ✅ Tipo detectado: $detected_type"
+    echo "  ✅ Linguagem: $detected_lang"
+    echo "  ✅ Framework: $detected_framework"
+
+    if [ "$mode" != "rapido" ]; then
+      if ! confirm "  📋 Confirma a detecção?"; then
+        echo "  Vamos reconfigurar manualmente:"
+        local type_options=("Backend API" "Mobile App" "Web Frontend" "Infra/Serviço" "Data Pipeline" "Sistema Legado")
+        local type_choice=$(menu_select "  Escolha o tipo" "${type_options[@]}")
+        case "$type_choice" in
+          1) detected_type="backend-api" ;;
+          2) detected_type="mobile-app" ;;
+          3) detected_type="web-frontend" ;;
+          4) detected_type="infra-service" ;;
+          5) detected_type="data-pipeline" ;;
+          6) detected_type="legacy-system" ;;
+        esac
+      fi
+    fi
+  fi
+
+  echo ""
+  echo "  ────────────────────────────────────────────────"
+  echo "  📋 Resumo da detecção:"
+  echo "    Tipo: $detected_type"
+  echo "    Linguagem: $detected_lang"
+  echo "    Framework: $detected_framework"
+  echo "  ────────────────────────────────────────────────"
+  echo ""
+
+  # ─── Fase 2: Manifesto ──────────────────────────────────────
+  echo "📋 Selecionando manifesto..."
+
+  local manifest_file="$FACEHUGGER_DIR/core/manifests/${detected_type}.yaml"
+  if [ ! -f "$manifest_file" ]; then
+    manifest_file="$FACEHUGGER_DIR/core/manifests/backend-api.yaml"
+  fi
+
+  echo "  Manifesto sugerido: $detected_type"
+  if [ "$mode" != "rapido" ]; then
+    if ! confirm "  Usar este manifesto?"; then
+      echo "  Manifestos disponíveis:"
+      local manifests=()
+      local i=1
+      while IFS= read -r m; do
+        local mname=$(basename "$m" .yaml)
+        local mdesc=$(grep -m1 'description:' "$m" 2>/dev/null | sed 's/description: //')
+        echo "    [$i] $mname — $mdesc"
+        manifests+=("$mname")
+        i=$((i + 1))
+      done < <(ls "$FACEHUGGER_DIR/core/manifests/"*.yaml 2>/dev/null || echo "")
+
+      local choice
+      read -r -p "  Escolha [1-${#manifests[@]}]: " choice || true; choice="${choice:-}"
+      choice="${choice:-1}"
+      local selected="${manifests[$((choice - 1))]}"
+      [ -n "$selected" ] && detected_type="$selected"
+    fi
+  fi
+
+  # ─── Fase 3: Issue tracker ──────────────────────────────────
+  local tracker="local"
+  if [ "$mode" != "rapido" ]; then
+    echo ""
+    echo "📋 Issue tracker:"
+    echo "  [1] GitHub"
+    echo "  [2] GitLab"
+    echo "  [3] Local (markdown)"
+    read -r -p "  Escolha [1-3] (Enter=3): " t_choice
+    case "${t_choice:-3}" in
+      1) tracker="github" ;;
+      2) tracker="gitlab" ;;
+      *) tracker="local" ;;
+    esac
+  fi
+
+  # ─── Fase 4: Modo de injeção ────────────────────────────────
+  local injection="${injection:-principal}"
+  if [ "$mode" != "rapido" ]; then
+    echo ""
+    echo "📋 Modo de injeção:"
+    echo "  [1] 🕵️  Silenciosa — nada no git"
+    echo "  [2] 🎯  Principal — AGENT-SEED.md + CONTEXT.md"
+    echo "  [3] 📦  Completa — tudo versionado"
+    read -r -p "  Escolha [1-3] (Enter=2): " i_choice
+    case "${i_choice:-2}" in
+      1) injection="silenciosa" ;;
+      2) injection="principal" ;;
+      3) injection="completa" ;;
+    esac
+  fi
+
+  # ─── Fase 5: Gerar ──────────────────────────────────────────
+  echo ""
+  echo "📄 Gerando arquivos no projeto alvo..."
+  echo ""
+
+  local target_name
+  target_name=$(basename "$target_path")
+
+  # Gera AGENT-SEED.md
+  local agent_seed_file="$target_path/AGENT-SEED.md"
+  if [ -f "$agent_seed_file" ] && [ "$mode" != "rapido" ]; then
+    if ! confirm "  AGENT-SEED.md já existe. Sobrescrever?"; then
+      if confirm "  Fazer backup?"; then
+        cp "$agent_seed_file" "${agent_seed_file}.bak.$(date +%Y%m%d%H%M%S)"
+        echo "  ✅ Backup criado"
+      fi
+    fi
+  fi
+
+  cat > "$agent_seed_file" <<EOF
+# AGENT-SEED.md — $target_name
+
+> Regras de governança do agente. Leia antes de qualquer alteração no código.
+> Gerado por 🎭 Facehugger v$VERSION
+
+## Filosofia do Projeto
+
+*Uma filosofia definida pelo usuário durante o setup.*
+
+## Regras de Engenharia
+
+$(if [ -f "$manifest_file" ]; then
+  echo "Regras carregadas do manifesto: $detected_type"
+  echo ""
+  while IFS=': ' read -r key value; do
+    [ "$key" = "book" ] && echo "- ${value} ($(grep -A2 "id: ${value}" "$FACEHUGGER_DIR/core/catalog.yaml" 2>/dev/null | grep 'label:' | sed 's/  label: //'))"
+  done < <(grep -A3 '  - book:' "$manifest_file" | grep -E '(book|version)' | paste - - | sed 's/ *//g')
+else
+  echo "Nenhum manifesto selecionado."
+fi)
+
+## Comportamento do Agente
+
+1. Antes de escrever código novo, leia CONTEXT.md e explore a base existente.
+2. Consulte o source real de dependências via open-source quando disponível.
+3. Use repomix para contexto completo do projeto quando necessário.
+
+## Agent Skills
+
+$(if [ -f "$FACEHUGGER_DIR/templates/shared/agent-skills-block.md" ]; then cat "$FACEHUGGER_DIR/templates/shared/agent-skills-block.md"; else
+echo "Skills configurados via Facehugger."
+fi)
+
+## Ferramentas Recomendadas
+
+- **repomix**: \`npx repomix\` para contexto completo do projeto
+$(if [ -f "$FACEHUGGER_DIR/templates/shared/footer.md" ]; then cat "$FACEHUGGER_DIR/templates/shared/footer.md"; fi)
+
+## 🚧 MCP Servers — A configurar
+
+Este projeto pode se beneficiar de MCP Servers para:
+- Banco de dados (PostgreSQL, SQLite)
+- APIs externas
+
+Consulte https://modelcontextprotocol.io para configurar.
+EOF
+
+  echo "  ✅ AGENT-SEED.md gerado"
+
+  # Gera CONTEXT.md
+  local context_file="$target_path/CONTEXT.md"
+  if [ ! -f "$context_file" ] || [ "$mode" = "fresh" ] || confirm "  CONTEXT.md já existe. Sobrescrever?" "n"; then
+    cat > "$context_file" <<EOF
+# $target_name — Contexto
+
+> Linguagem ubíqua do domínio. Mantenha atualizado conforme o projeto evolui.
+
+## Linguagem
+
+**TODO**: Defina os termos do domínio aqui.
+
+## Regras
+
+- Adicione termos específicos do domínio do projeto.
+- Evite conceitos genéricos de programação.
+- Seja opinativo: escolha o termo correto e liste sinônimos a evitar.
+
+---
+
+*Gerado por 🎭 Facehugger v$VERSION. Preencha os termos do seu domínio.*
+EOF
+    echo "  ✅ CONTEXT.md gerado"
+  else
+    echo "  ⏭️  CONTEXT.md mantido"
+  fi
+
+  # ─── Modo Silenciosa: adiciona ao .gitignore ────────────────
+  if [ "$injection" = "silenciosa" ]; then
+    local gitignore_file="$target_path/.gitignore"
+    local block="# 🎭 Facehugger generated"
+    if [ -f "$gitignore_file" ] && grep -q "$block" "$gitignore_file" 2>/dev/null; then
+      echo "  ⏭️  Bloco Facehugger já existe no .gitignore"
+    else
+      cat >> "$gitignore_file" 2>/dev/null || touch "$gitignore_file"
+      cat >> "$gitignore_file" <<EOF
+
+# 🎭 Facehugger generated
+AGENT-SEED.md
+CONTEXT.md
+docs/agents/
+# 🎭 End Facehugger
+EOF
+      echo "  ✅ Bloco adicionado ao .gitignore (modo silenciosa)"
+    fi
+  fi
+
+  # ─── Renomear AGENT-SEED.md ─────────────────────────────────
+  local final_name="AGENT-SEED.md"
+  if [ "$mode" != "rapido" ]; then
+    echo ""
+    echo "📋 Renomear AGENT-SEED.md?"
+    echo "  [1] Claude Code → CLAUDE.md"
+    echo "  [2] Cursor → .cursorrules"
+    echo "  [3] Windsurf → .windsurfrules"
+    echo "  [4] Manter AGENT-SEED.md"
+    echo "  [5] Outro (especificar)"
+    read -r -p "  Escolha [1-5] (Enter=4): " r_choice
+    case "${r_choice:-4}" in
+      1) final_name="CLAUDE.md" ;;
+      2) final_name=".cursorrules" ;;
+      3) final_name=".windsurfrules" ;;
+      5)
+        read -r -p "  Nome do arquivo: " final_name
+        [ -z "$final_name" ] && final_name="AGENT-SEED.md"
+        ;;
+      *) final_name="AGENT-SEED.md" ;;
+    esac
+
+    if [ "$final_name" != "AGENT-SEED.md" ]; then
+      if [ -f "$target_path/$final_name" ]; then
+        if confirm "  $final_name já existe. Sobrescrever?" "n"; then
+          mv "$agent_seed_file" "$target_path/$final_name"
+          echo "  ✅ Renomeado para $final_name"
+        fi
+      else
+        mv "$agent_seed_file" "$target_path/$final_name"
+        echo "  ✅ Renomeado para $final_name"
+      fi
+    fi
+  fi
+
+  echo ""
+  echo "  ────────────────────────────────────────────────"
+  echo "  🎯 Catch complete! $(basename "$target_path") está pronto."
+  echo "  ────────────────────────────────────────────────"
+  echo ""
+
+  # ─── Multi-projeto ──────────────────────────────────────────
+  if confirm "  Quer configurar outro projeto?"; then
+    read -r -p "  Caminho do próximo projeto: " next_target
+    if [ -n "$next_target" ]; then
+      cmd_catch "$next_target" "$mode"
+    fi
+  fi
+}
+
+# ─── Main ──────────────────────────────────────────────────────────────────
+
+main() {
+  local command=""
+  local target=""
+  local config_name="default"
+  local mode_override=""
+  local dry_run=false
+
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --help|-h) show_help ;;
+      --version|-v) show_version ;;
+      --dry-run) dry_run=true; shift ;;
+      --mode) mode_override="$2"; shift 2 ;;
+      --config) config_name="$2"; shift 2 ;;
+      catch|config) command="$1"; shift ;;
+      *)
+        if [ -z "$target" ]; then
+          target="$1"
+        fi
+        shift
+        ;;
+    esac
+  done
+
+  if [ "$dry_run" = true ]; then
+    echo "🏁 Modo --dry-run ativado. Nenhum arquivo será escrito."
+    echo "  Comando: $command $target"
+    exit 0
+  fi
+
+  case "$command" in
+    config) manage_config ;;
+    catch)
+      if [ -z "$target" ]; then
+        read -r -p "  Caminho do projeto alvo: " target
+      fi
+      cmd_catch "$target" "$mode_override"
+      ;;
+    *)
+      if [ $# -eq 1 ] && [ -d "$1" ]; then
+        cmd_catch "$1" ""
+      else
+        show_help
+      fi
+      ;;
+  esac
+}
+
+main "$@"

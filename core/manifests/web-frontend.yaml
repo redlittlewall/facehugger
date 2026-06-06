@@ -1,0 +1,30 @@
+# 🎭 Manifesto: Web Frontend
+name: web-frontend
+label: Web Frontend
+description: Configuração para SPAs, SSR, landing pages
+tags: [web, frontend, spa, react, svelte, nextjs]
+
+rules:
+  - book: the-pragmatic-programmer
+    version: mini
+    priority: high
+  - book: a-philosophy-of-software-design
+    version: mini
+    priority: high
+  - book: clean-code
+    version: nano
+    priority: medium
+
+recommended_skills:
+  essential:
+    - diagnose
+    - grill-with-docs
+    - to-issues
+    - to-prd
+    - handoff
+    - grill-me
+  optional:
+    - zoom-out
+    - prototype
+    - caveman
+    - tdd

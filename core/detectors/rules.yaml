@@ -1,0 +1,77 @@
+# 🎭 Facehugger — Regras de Detecção de Projetos
+#
+# Cada regra mapeia arquivos de configuração → tipo de projeto.
+# A primeira regra que matches (na ordem abaixo) é usada.
+
+detectors:
+  - files: ["pubspec.yaml"]
+    type: mobile-app
+    language: Dart
+    framework: Flutter
+    confidence: high
+
+  - files: ["package.json", "nest-cli.json"]
+    type: backend-api
+    language: TypeScript
+    framework: NestJS
+    confidence: high
+
+  - files: ["package.json", "svelte.config.js", "svelte.config.ts"]
+    type: web-frontend
+    language: TypeScript
+    framework: SvelteKit
+    confidence: high
+
+  - files: ["package.json", "next.config.js", "next.config.ts", "next.config.mjs"]
+    type: web-frontend
+    language: TypeScript
+    framework: Next.js
+    confidence: high
+
+  - files: ["Cargo.toml"]
+    type: backend-api
+    language: Rust
+    framework: ""
+    confidence: medium
+
+  - files: ["go.mod"]
+    type: backend-api
+    language: Go
+    framework: ""
+    confidence: medium
+
+  - files: ["composer.json"]
+    type: backend-api
+    language: PHP
+    framework: "Laravel/Symfony"
+    confidence: medium
+
+  - files: ["nginx.conf"]
+    type: infra-service
+    language: ""
+    framework: NGINX
+    confidence: high
+
+  - files: ["pyproject.toml", "manage.py"]
+    type: backend-api
+    language: Python
+    framework: Django
+    confidence: high
+
+  - files: ["pyproject.toml"]
+    type: backend-api
+    language: Python
+    framework: ""
+    confidence: medium
+
+  - files: ["requirements.txt"]
+    type: backend-api
+    language: Python
+    framework: ""
+    confidence: low
+
+  - files: ["package.json"]
+    type: backend-api
+    language: TypeScript
+    framework: Node.js
+    confidence: low

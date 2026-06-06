@@ -1,0 +1,30 @@
+# 🎭 Manifesto: Sistema Legado
+name: legacy-system
+label: Sistema Legado
+description: Configuração para sistemas legados em qualquer stack
+tags: [legacy, refactoring, migration, maintenance]
+
+rules:
+  - book: working-effectively-with-legacy-code
+    version: full
+    priority: high
+  - book: refactoring
+    version: mini
+    priority: high
+  - book: clean-code
+    version: mini
+    priority: medium
+
+recommended_skills:
+  essential:
+    - diagnose
+    - tdd
+    - grill-with-docs
+    - triage
+    - to-issues
+    - improve-codebase-architecture
+    - handoff
+    - grill-me
+  optional:
+    - zoom-out
+    - caveman

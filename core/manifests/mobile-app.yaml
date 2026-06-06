@@ -1,0 +1,34 @@
+# 🎭 Manifesto: Mobile App
+name: mobile-app
+label: Mobile App
+description: Configuração para apps mobile (Flutter, Kotlin, Swift)
+tags: [mobile, app, flutter, android, ios]
+
+rules:
+  - book: clean-code
+    version: mini
+    priority: high
+  - book: a-philosophy-of-software-design
+    version: mini
+    priority: high
+  - book: refactoring
+    version: mini
+    priority: medium
+  - book: the-pragmatic-programmer
+    version: mini
+    priority: medium
+
+recommended_skills:
+  essential:
+    - diagnose
+    - tdd
+    - grill-with-docs
+    - triage
+    - to-issues
+    - to-prd
+    - handoff
+    - grill-me
+  optional:
+    - zoom-out
+    - prototype
+    - caveman

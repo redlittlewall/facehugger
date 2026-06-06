@@ -1,0 +1,7 @@
+{
+  "name": "facehugger",
+  "description": "🎭 Facehugger — Setup de IA para qualquer projeto",
+  "skills": [
+    "./skills/facehugger/setup-skills"
+  ]
+}

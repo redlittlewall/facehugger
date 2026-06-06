@@ -1,0 +1,38 @@
+# 🎭 Manifesto: Backend API
+name: backend-api
+label: Backend API
+description: Configuração para APIs REST, GraphQL, ou serviços backend
+tags: [api, backend, server, service, microservice]
+
+rules:
+  - book: clean-architecture
+    version: mini
+    priority: high
+  - book: domain-driven-design-distilled
+    version: mini
+    priority: high
+  - book: working-effectively-with-legacy-code
+    version: mini
+    priority: medium
+  - book: a-philosophy-of-software-design
+    version: mini
+    priority: medium
+  - book: refactoring-guru
+    version: mini
+    priority: low
+
+recommended_skills:
+  essential:
+    - diagnose
+    - tdd
+    - grill-with-docs
+    - triage
+    - to-issues
+    - to-prd
+    - handoff
+    - improve-codebase-architecture
+    - grill-me
+  optional:
+    - zoom-out
+    - prototype
+    - caveman
