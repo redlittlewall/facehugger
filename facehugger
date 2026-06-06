@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 #
-# 🎭 Facehugger — Entrypoint CLI
+# Facehugger -- Entrypoint CLI
 #
 # Uso:
-#   ./facehugger catch <caminho-do-projeto> [opções]
+#   ./facehugger catch <caminho-do-projeto> [opcoes]
 #   ./facehugger config
 #   ./facehugger --help
 #
@@ -12,38 +12,45 @@
 set -euo pipefail
 
 FACEHUGGER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VERSION="0.1.0"
+VERSION="0.2.0"
 
-# ─── Core paths ────────────────────────────────────────────────────────────
+# --- Core paths -----------------------------------------------------------
 DETECT_SCRIPT="$FACEHUGGER_DIR/core/detectors/detect.sh"
 
-# ─── Helpers ───────────────────────────────────────────────────────────────
+# --- Helpers ---------------------------------------------------------------
 
 show_help() {
   cat <<EOF
-🎭 Facehugger v$VERSION
+Facehugger v$VERSION
 
 Uso:
   ./facehugger catch <path>     Configura um projeto alvo
-  ./facehugger config           Gerencia configurações
+  ./facehugger finalize <path>  Finaliza setup apos entrevista de dominio
+  ./facehugger config           Gerencia configuracoes
   ./facehugger --help           Mostra esta ajuda
-  ./facehugger --version        Mostra a versão
+  ./facehugger --version        Mostra a versao
   ./facehugger --dry-run <cmd>  Mostra o que seria gerado sem escrever
 
-Opções do catch:
-  --mode <rapido|semi|fresh>    Modo de execução
-  --config <nome>               Perfil de configuração
+Opcoes do catch:
+  --mode <rapido|semi|fresh|interactive>  Modo de execucao
+  --config <nome>                          Perfil de configuracao
+
+Modos:
+  rapido       Usa config existente sem perguntar
+  semi         Modo guiado com confirmacoes (padrao)
+  fresh        Ignora config, pergunta tudo do zero
+  interactive  Gera entrevista de dominio para o AI completar
 
 EOF
   exit 0
 }
 
 show_version() {
-  echo "🎭 Facehugger v$VERSION"
+  echo "Facehugger v$VERSION"
   exit 0
 }
 
-# ─── Config loading ────────────────────────────────────────────────────────
+# --- Config loading -------------------------------------------------------
 
 load_config() {
   local config_name="${1:-default}"
@@ -54,9 +61,7 @@ load_config() {
   local tracker="local"
   local agent_tool="claude-code"
 
-  # Carrega config nomeada
   if [ -f "$config_file" ]; then
-    # Parse YAML simplificado (apenas campos conhecidos)
     while IFS=': ' read -r key value; do
       case "$key" in
         "mode") mode="$value" ;;
@@ -67,7 +72,6 @@ load_config() {
     done < <(grep -E '^(mode|injection|tracker|agent_tool):' "$config_file")
   fi
 
-  # Sobrescreve com config local
   if [ -f "$local_config" ]; then
     while IFS=': ' read -r key value; do
       case "$key" in
@@ -82,7 +86,7 @@ load_config() {
   echo "$mode|$injection|$tracker|$agent_tool"
 }
 
-# ─── UI helpers ────────────────────────────────────────────────────────────
+# --- UI helpers -----------------------------------------------------------
 
 confirm() {
   local prompt="$1"
@@ -117,49 +121,52 @@ menu_select() {
   echo "${choice:-1}"
 }
 
-# ─── Banner ────────────────────────────────────────────────────────────────
+# --- Banner ---------------------------------------------------------------
 
 show_banner() {
   echo ""
-  echo "  ╔═══════════════════════════════════════╗"
-  echo "  ║        🎭  FACEHUGGER  v$VERSION          ║"
-  echo "  ║  Acoplando, injetando e vazando...   ║"
-  echo "  ╚═══════════════════════════════════════╝"
+  echo "  +-------------------------------------------+"
+  echo "  |           FACEHUGGER  v$VERSION              |"
+  echo "  |  Acoplando, injetando e vazando...        |"
+  echo "  +-------------------------------------------+"
   echo ""
 }
 
-# ─── Mode selection ────────────────────────────────────────────────────────
+# --- Mode selection -------------------------------------------------------
 
 select_mode() {
   echo ""
-  echo "🎭 Facehugger — Catch"
+  echo "Como quer configurar esta execucao?"
   echo ""
-  echo "Como quer configurar esta execução?"
+  echo "  [1] Rapido (usar config existente)"
+  echo "      Usa as configuracoes salvas sem perguntar nada."
   echo ""
-  echo "  [1] ⚡ Rápido (usar config existente)"
-  echo "      Usa as configurações salvas sem perguntar nada."
-  echo ""
-  echo "  [2] ✨ Guiado (config existente + confirmações)"
+  echo "  [2] Guiado (config existente + confirmacoes)"
   echo "      Usa a config como base, mas mostra cada escolha"
-  echo "      e pergunta confirmação antes de prosseguir."
+  echo "      e pergunta confirmacao antes de prosseguir."
   echo ""
-  echo "  [3] 🆕 Fresco (ignorar config, perguntar tudo)"
+  echo "  [3] Fresco (ignorar config, perguntar tudo)"
   echo "      Ignora qualquer config salva e pergunta cada"
-  echo "      decisão do zero."
+  echo "      decisao do zero."
   echo ""
-  echo "  [4] ⚙️  Gerenciar Config"
-  echo "      Criar, selecionar ou editar configurações."
+  echo "  [4] Interativo (entrevista de dominio)"
+  echo "      Pergunta sobre o dominio, arquitetura e dores"
+  echo "      do projeto para gerar contexto rico."
+  echo ""
+  echo "  [5] Gerenciar Config"
+  echo "      Criar, selecionar ou editar configuracoes."
   echo ""
 
   local choice
-  read -r -p "  Escolha [1-4] (Enter=2): " choice || true; choice="${choice:-}"
+  read -r -p "  Escolha [1-5] (Enter=2): " choice || true; choice="${choice:-}"
   choice="${choice:-2}"
 
   case "$choice" in
     1) echo "rapido" ;;
     2) echo "semi" ;;
     3) echo "fresh" ;;
-    4)
+    4) echo "interactive" ;;
+    5)
       manage_config
       select_mode
       ;;
@@ -167,26 +174,26 @@ select_mode() {
   esac
 }
 
-# ─── Config management ────────────────────────────────────────────────────
+# --- Config management ---------------------------------------------------
 
 manage_config() {
   echo ""
-  echo "⚙️  Gerenciar Configurações"
+  echo "Gerenciar Configuracoes"
   echo ""
 
   local configs
   configs=$(ls "$FACEHUGGER_DIR/core/configs/"*.yaml 2>/dev/null | xargs -n1 basename | sed 's/\.yaml$//' | grep -v '^$' || echo "nenhuma")
 
   if [ "$configs" = "nenhuma" ]; then
-    echo "  Nenhuma configuração encontrada."
+    echo "  Nenhuma configuracao encontrada."
     echo ""
-    if confirm "  Criar configuração default?"; then
+    if confirm "  Criar configuracao default?"; then
       create_config "default"
     fi
     return
   fi
 
-  echo "  Configurações disponíveis:"
+  echo "  Configuracoes disponiveis:"
   local i=1
   local config_list=()
   while IFS= read -r cfg; do
@@ -196,10 +203,10 @@ manage_config() {
   done < <(echo "$configs")
 
   echo ""
-  echo "  [C] Criar nova configuração"
-  echo "  [S] Selecionar configuração ativa"
-  echo "  [E] Editar configuração existente"
-  echo "  [D] Deletar configuração"
+  echo "  [C] Criar nova configuracao"
+  echo "  [S] Selecionar configuracao ativa"
+  echo "  [E] Editar configuracao existente"
+  echo "  [D] Deletar configuracao"
   echo "  [V] Voltar"
   echo ""
 
@@ -217,17 +224,17 @@ manage_config() {
 create_config() {
   local name="${1:-}"
   if [ -z "$name" ]; then
-    read -r -p "  Nome da configuração: " name
+    read -r -p "  Nome da configuracao: " name
   fi
   [ -z "$name" ] && name="default"
 
   echo ""
   echo "  Configurando '$name':"
 
-  read -r -p "  Modo de execução (rapido/semi/fresh) [semi]: " mode
+  read -r -p "  Modo de execucao (rapido/semi/fresh) [semi]: " mode
   mode="${mode:-semi}"
 
-  read -r -p "  Modo de injeção (silenciosa/principal/completa) [principal]: " injection
+  read -r -p "  Modo de injecao (silenciosa/principal/completa) [principal]: " injection
   injection="${injection:-principal}"
 
   read -r -p "  Issue tracker (github/gitlab/local) [local]: " tracker
@@ -237,7 +244,7 @@ create_config() {
   agent_tool="${agent_tool:-claude-code}"
 
   cat > "$FACEHUGGER_DIR/core/configs/${name}.yaml" <<YAML
-# 🎭 Facehugger — Configuração: $name
+# Facehugger - Configuracao: $name
 name: "$name"
 mode: "$mode"
 injection: "$injection"
@@ -246,13 +253,13 @@ agent_tool: "$agent_tool"
 YAML
 
   echo ""
-  echo "  ✅ Configuração '$name' criada!"
+  echo "  Configuracao '$name' criada!"
 }
 
 select_active_config() {
   local configs
   configs=$(ls "$FACEHUGGER_DIR/core/configs/"*.yaml 2>/dev/null | xargs -n1 basename | sed 's/\.yaml$//' | grep -v '^$' || echo "")
-  [ -z "$configs" ] && { echo "  Nenhuma config disponível."; return; }
+  [ -z "$configs" ] && { echo "  Nenhuma config disponivel."; return; }
 
   local i=1
   local config_list=()
@@ -267,14 +274,893 @@ select_active_config() {
   local selected="${config_list[$((choice - 1))]}"
   if [ -n "$selected" ]; then
     cat > "$FACEHUGGER_DIR/core/config.local.yaml" <<YAML
-# 🎭 Configuração ativa (sobrescrita local)
+# Configuracao ativa (sobrescrita local)
 active_config: "$selected"
 YAML
-    echo "  ✅ Configuração '$selected' ativada!"
+    echo "  Configuracao '$selected' ativada!"
   fi
 }
 
-# ─── Catch command ────────────────────────────────────────────────────────
+# --- Skills discovery -----------------------------------------------------
+
+discover_skills() {
+  while IFS= read -r skill_file; do
+    local skill_dir
+    skill_dir=$(basename "$(dirname "$skill_file")")
+    local skill_name
+    skill_name=$(grep -m1 'name:' "$skill_file" 2>/dev/null | sed 's/name: *//; s/^ *//; s/ *$//' || true)
+    [ -z "$skill_name" ] && skill_name="$skill_dir"
+    local skill_desc
+    skill_desc=$(grep -m1 'description:' "$skill_file" 2>/dev/null | sed 's/description: *//; s/^ *//; s/ *$//' || true)
+    local skill_path
+    skill_path="${skill_file#$FACEHUGGER_DIR/}"
+    echo "${skill_dir}|${skill_name}|${skill_desc}|${skill_path}"
+  done < <(find "$FACEHUGGER_DIR/skills/mattpocock/skills/" -maxdepth 3 -name "SKILL.md" -not -path "*/deprecated/*" 2>/dev/null | sort || true)
+}
+
+select_skills() {
+  local manifest="$1"
+  local mode="$2"
+  local essential_skills=""
+  local optional_skills=""
+  local in_section=""
+
+  while IFS= read -r line; do
+    local trimmed
+    trimmed=$(echo "$line" | sed 's/^[[:space:]]*//')
+    case "$trimmed" in
+      "essential:") in_section="essential" ;;
+      "optional:") in_section="optional" ;;
+      "- "*)
+        local sn
+        sn=$(echo "$line" | sed 's/.*- //')
+        [ "$in_section" = "essential" ] && essential_skills="$essential_skills $sn"
+        [ "$in_section" = "optional" ] && optional_skills="$optional_skills $sn"
+        ;;
+      "recommended_skills:") ;;
+      "") in_section="" ;;
+      *) in_section="" ;;
+    esac
+  done < "$manifest"
+
+  local all_skills
+  all_skills=$(discover_skills || true)
+
+  # Nenhuma skill recomendada
+  if [ -z "$essential_skills" ] && [ -z "$optional_skills" ]; then
+    echo "  Sem skills recomendadas no manifesto." >&2
+    return
+  fi
+
+  # Modo rapido: apenas gera o bloco, sem interacao com usuario
+  if [ "$mode" = "rapido" ]; then
+    local final_skills="$essential_skills"
+  else
+    echo "  Essenciais:" >&2
+    for s in $essential_skills; do
+      local s_desc
+      s_desc=$(echo "$all_skills" | grep "^${s}|" | cut -d'|' -f3 || true)
+      echo "    [+] $s - ${s_desc:-skill disponivel}" >&2
+    done
+    echo "" >&2
+    echo "  Opcionais:" >&2
+    for s in $optional_skills; do
+      local s_desc
+      s_desc=$(echo "$all_skills" | grep "^${s}|" | cut -d'|' -f3 || true)
+      echo "    [ ] $s - ${s_desc:-skill disponivel}" >&2
+    done
+
+    local final_skills="$essential_skills"
+    echo "" >&2
+    if confirm "  Manter selecao padrao?"; then
+      : # usa essential_skills
+    else
+      local all_opts=""
+      for s in $essential_skills $optional_skills; do
+        case " $all_opts " in *" $s "*) ;; *) all_opts="$all_opts $s" ;; esac
+      done
+      final_skills=""
+      for s in $all_opts; do
+        local default_state="off"
+        for es in $essential_skills; do [ "$es" = "$s" ] && default_state="on"; done
+        if [ "$default_state" = "on" ]; then
+          if confirm "    Remover $s?"; then : ; else final_skills="$final_skills $s"; fi
+        else
+          if confirm "    Adicionar $s?"; then final_skills="$final_skills $s"; fi
+        fi
+      done
+    fi
+  fi
+
+  # Gera bloco markdown (unico stdout = retorno)
+  local skills_block=""
+  skills_block="$skills_block
+## Skills do Matt Pocock
+
+Skills ativos neste projeto:"
+  for s in $final_skills; do
+    local s_path
+    s_path=$(echo "$all_skills" | grep "^${s}|" | cut -d'|' -f4 || true)
+    local s_name
+    s_name=$(echo "$all_skills" | grep "^${s}|" | cut -d'|' -f2 || true)
+    [ -z "$s_name" ] && s_name="$s"
+    [ -n "$s_path" ] && skills_block="$skills_block
+- **${s_name}** - \`${s_path}\`"
+  done
+  skills_block="$skills_block
+
+### Instalacao
+
+1. Entre no diretorio do projeto.
+2. Instale as skills:
+   \`\`\`bash
+   git clone https://github.com/mattpocock/skills.git .claude/skills
+   \`\`\`
+3. Execute \`/setup-matt-pocock-skills\` no Claude Code.
+"
+
+  echo "$skills_block"
+}
+
+# --- Inject rules (top-level) ----------------------------------------------
+
+inject_rules() {
+  local manifest="$1"
+  local books_dir="$FACEHUGGER_DIR/vendor/agent-rules-books"
+  local output=""
+
+  if [ ! -f "$manifest" ]; then
+    echo "Nenhum manifesto selecionado."
+    return
+  fi
+
+  while IFS=$'\t' read -r book_line version_line; do
+    local book
+    book=$(echo "$book_line" | sed 's/.*book: //' | xargs)
+    local version
+    version=$(echo "$version_line" | sed 's/.*version: //' | xargs)
+    local label
+    label=$(grep -A2 "id: $book" "$FACEHUGGER_DIR/core/catalog.yaml" 2>/dev/null | grep 'label:' | sed 's/.*label: //' | head -1 | xargs || true)
+    local author
+    author=$(grep -A3 "id: $book" "$FACEHUGGER_DIR/core/catalog.yaml" 2>/dev/null | grep 'author:' | sed 's/.*author: //' | head -1 | xargs || true)
+    local book_path
+    book_path=$(grep -A3 "id: $book" "$FACEHUGGER_DIR/core/catalog.yaml" 2>/dev/null | grep 'path:' | sed 's/.*path: //' | head -1 | xargs || true)
+    [ -z "$book_path" ] && book_path="$book/$book"
+    [ -z "$label" ] && label="$book"
+    [ -z "$author" ] && author=""
+
+    local rule_file=""
+    for v in "$version" "mini" "full" "nano"; do
+      for ext in "md" "txt"; do
+        local candidate="$books_dir/${book_path}.${v}.${ext}"
+        if [ -f "$candidate" ]; then
+          rule_file="$candidate"
+          break 2
+        fi
+      done
+    done
+
+    output="$output
+### ${label}${author:+ ($author)}
+"
+    if [ -n "$rule_file" ]; then
+      output="$output$(cat "$rule_file" 2>/dev/null)
+"
+    else
+      output="$output*Regras nao encontradas para $book. Execute git submodule update --init --recursive.*
+"
+    fi
+  done < <(grep -E '^\s+- book:|^\s+version:' "$manifest" | paste - -)
+
+  echo "$output"
+}
+
+# --- Interview / Interactive helpers ----------------------------------------
+
+generate_interview_artifacts() {
+  local project_path="$1"
+  local project_name="$2"
+  local project_type="$3"
+  local ecosystem_name="${4:-}"
+
+  local docs_dir="$project_path/docs/setup"
+  mkdir -p "$docs_dir" 2>/dev/null || true
+
+  local eco_tag=""
+  [ -n "$ecosystem_name" ] && eco_tag=" (ecossistema: ${ecosystem_name})"
+
+  cat > "$docs_dir/interview.md" <<QUESTIONS
+# 🎭 Facehugger — Entrevista de Contexto
+
+> Projeto: **${project_name}**${eco_tag}
+> Tipo: ${project_type}
+>
+> Instrucao para o AI: Conduza esta entrevista com o usuario antes de
+> modificar qualquer codigo. Preencha as respostas em CONTEXT.md.
+>
+> Gerado por Facehugger. Remova este bloco apos o setup completo.
+
+## 1. Dominio
+
+- Qual e o proposito central deste projeto?
+- Quem sao os usuarios finais?
+- Qual problema de negocio ele resolve?
+- Existem concorrentes ou referenciais?
+
+## 2. Arquitetura
+
+- Quais sao os componentes/modulos principais?
+- Como este projeto se comunica com outros servicos? (API REST, GraphQL, filas, etc.)
+- Existe um diagrama ou documento de arquitetura?
+- Quais sao os fluxos criticos (mais importantes) do sistema?
+
+## 3. Time & Processo
+
+- Quem mantem o projeto atualmente?
+- Qual o ciclo de deploy? (manual, CI/CD automatizado, frequencia)
+- Existem padroes de codigo ou guias de estilo?
+- Qual e o fluxo de revisao de codigo?
+
+## 4. Dores & Divida Tecnica
+
+- Quais sao os maiores problemas conhecidos?
+- O que voce mudaria se pudesse comecar de novo?
+- Existem areas do codigo que ninguem entende bem?
+- Ha dependencias desatualizadas ou problematicas?
+
+## 5. Setup Local
+
+- Qual e o comando para rodar o projeto localmente?
+- Ha servicos externos necessarios (banco, cache, etc.)?
+- Como rodar os testes?
+- Ha documentacao de setup alem desta?
+
+QUESTIONS
+
+  echo "$docs_dir/interview.md"
+}
+
+prepare_interview_instructions() {
+  local project_path="$1"
+  local project_name="$2"
+  local project_type="$3"
+  local ecosystem_name="${4:-}"
+
+  local docs_dir="$project_path/docs/setup"
+  mkdir -p "$docs_dir" 2>/dev/null || true
+
+  # Gera CLAUDE.md com instrucao de entrevista no TOPO
+  local agent_seed="$project_path/AGENT-SEED.md"
+  local claude_file="$project_path/CLAUDE.md"
+  local interview_file="$docs_dir/interview.md"
+
+  # Se AGENT-SEED.md ja existe, insere o bloco no topo
+  if [ -f "$agent_seed" ]; then
+    local temp_file
+    temp_file=$(mktemp)
+    cat > "$temp_file" <<INSTR
+# 🎭 FASE 1: ENTREVISTA DE SETUP
+
+**IMPORTANTE**: Antes de qualquer alteracao de codigo, voce DEVE conduzir
+uma entrevista de setup com o usuario para entender o dominio do projeto.
+
+1. Pergunte ao usuario sobre:
+   - Proposito do projeto e dominio
+   - Arquitetura e componentes
+   - Usuarios e casos de uso
+   - Setup local e dependencias
+   - Dores conhecidas e divida tecnica
+2. Preencha as respostas em \`CONTEXT.md\` (use as secoes de \`docs/setup/interview.md\` como guia).
+3. Informe ao usuario que pode executar \`! ./facehugger finalize .\` para completar o setup.
+
+> Instrucao gerada por Facehugger v${VERSION}. Remova este bloco apos a entrevista.
+
+---
+
+$(cat "$agent_seed")
+INSTR
+    mv "$temp_file" "$agent_seed"
+  fi
+
+  echo "$interview_file"
+}
+
+# --- cmd_finalize -----------------------------------------------------------
+
+cmd_finalize() {
+  local target_path="$1"
+  local context_file="$target_path/CONTEXT.md"
+  local claude_file="$target_path/CLAUDE.md"
+  local ecosystem_file="$target_path/ECOSYSTEM.md"
+
+  if [ ! -d "$target_path" ]; then
+    echo "Erro: diretorio '$target_path' nao encontrado" >&2
+    exit 1
+  fi
+
+  echo "  Finalizando setup para $(basename "$target_path")..."
+
+  # Le o CONTEXT.md para extrair informacoes
+  local domain_desc=""
+  local arch_desc=""
+  if [ -f "$context_file" ]; then
+    domain_desc=$(grep -A3 "^## 1\. Dominio" "$context_file" 2>/dev/null | head -4 | tail -3 | tr '\n' ' ' || echo "")
+    arch_desc=$(grep -A3 "^## 2\. Arquitetura" "$context_file" 2>/dev/null | head -4 | tail -3 | tr '\n' ' ' || echo "")
+  fi
+
+  # Enriquece ECOSYSTEM.md se existir
+  if [ -f "$ecosystem_file" ]; then
+    if [ -n "$domain_desc" ]; then
+      # Insere descricao do dominio apos o titulo
+      local enriched="$ecosystem_file.enriched"
+      sed "s/^# .*/# $(basename "$target_path") — Ecossistema\n\n> ${domain_desc}/" "$ecosystem_file" > "$enriched" 2>/dev/null
+      mv "$enriched" "$ecosystem_file"
+    fi
+    echo "  ECOSYSTEM.md enriquecido com contexto do dominio."
+  fi
+
+  # Remove arquivos temporarios de setup
+  local interview_file="$target_path/docs/setup/interview.md"
+  if [ -f "$interview_file" ]; then
+    rm -f "$interview_file"
+    # Remove diretorio se ficou vazio
+    rmdir "$target_path/docs/setup" 2>/dev/null || true
+    rmdir "$target_path/docs" 2>/dev/null || true
+  fi
+
+  # Remove o bloco de entrevista do CLAUDE.md
+  if [ -f "$claude_file" ]; then
+    local temp_file
+    temp_file=$(mktemp)
+    # Remove linhas entre "FASE 1: ENTREVISTA" e "---" (inclusive)
+    sed '/# 🎭 FASE 1: ENTREVISTA/,/^---$/d' "$claude_file" > "$temp_file" 2>/dev/null
+    # Remove linhas em branco no inicio
+    sed -i '/./,$!d' "$temp_file" 2>/dev/null
+    mv "$temp_file" "$claude_file"
+    echo "  Bloco de entrevista removido do CLAUDE.md."
+  fi
+
+  echo ""
+  echo "  --- Finalize complete!"
+  echo "  $(basename "$target_path") esta pronto para uso."
+  echo "  --------------------------"
+}
+
+# --- Ecosystem detection ---------------------------------------------------
+
+detect_ecosystem() {
+  local target="$1"
+  local results=""
+  local count=0
+  local -A seen_dirs  # evita duplicatas entre passadas
+
+  # --- Passada 1: varredura de 1 nivel (filhos imediatos) ---
+  for subdir in "$target"/*/; do
+    [ -d "$subdir" ] || continue
+    local subname
+    subname=$(basename "$subdir")
+    # Pula diretorios ocultos
+    [[ "$subname" == .* ]] && continue
+
+    local detection
+    detection=$(bash "$DETECT_SCRIPT" "$subdir" 2>/dev/null || echo "none|||none")
+    local detected_type
+    detected_type=$(echo "$detection" | cut -d'|' -f1)
+    local detected_lang
+    detected_lang=$(echo "$detection" | cut -d'|' -f2)
+    local detected_framework
+    detected_framework=$(echo "$detection" | cut -d'|' -f3)
+
+    if [ "$detected_type" != "none" ]; then
+      results="$results${subname}|${detected_type}|${detected_lang}|${detected_framework}"$'\n'
+      seen_dirs["$subname"]=1
+      count=$((count + 1))
+    fi
+  done
+
+  # So continua para passada 2 se ja temos 2+ projetos
+  if [ "$count" -ge 2 ]; then
+    # --- Passada 2: varredura aninhada (depth 2-4) ---
+    # Procura por arquivos de configuracao conhecidos dentro dos
+    # subdiretorios ja detectados (ex: tattoopop-api/adm/pubspec.yaml)
+    local find_targets=()
+    for subdir in "$target"/*/; do
+      [ -d "$subdir" ] || continue
+      local sn
+      sn=$(basename "$subdir")
+      [[ "$sn" == .* ]] && continue
+      # So varre dentro de projetos que ja foram detectados na passada 1
+      if [ "${seen_dirs["$sn"]:-0}" -eq 1 ]; then
+        find_targets+=("$subdir")
+      fi
+    done
+
+    if [ "${#find_targets[@]}" -gt 0 ]; then
+      local nested_candidates
+      nested_candidates=$(find "${find_targets[@]}" \
+        -maxdepth 4 -type f \
+        \( -name "pubspec.yaml" -o -name "package.json" -o -name "Dockerfile" \) \
+        ! -path "*/node_modules/*" \
+        ! -path "*/.git/*" \
+        ! -path "*/.*/*" \
+        2>/dev/null | sort -u || true)
+
+      # Para cada arquivo encontrado, deduplica e detecta
+      echo "$nested_candidates" | while IFS= read -r candidate; do
+        [ -z "$candidate" ] && continue
+        local parent_dir
+        parent_dir=$(dirname "$candidate")
+        local rel_path
+        rel_path="${parent_dir#$target/}"
+
+        # Pula se ja foi detectado na passada 1 ou se e o proprio projeto raiz
+        local parent_base
+        parent_base=$(basename "$parent_dir")
+        local parent_of_parent
+        parent_of_parent=$(basename "$(dirname "$parent_dir")")
+        [[ "$parent_base" == .* ]] && continue
+        [[ "$parent_of_parent" == .* ]] && continue
+        [ "${seen_dirs["$parent_base"]:-0}" -eq 1 ] && continue
+        [ "${seen_dirs["$rel_path"]:-0}" -eq 1 ] && continue
+
+        # Evita que o proprio diretorio raiz do subprojeto seja re-detectado
+        # (ex: tattoopop-api/pubspec.yaml que ja foi detectado como tattoopop-api)
+        [ "$parent_dir" = "$target/$parent_base" ] && continue
+
+        local detection
+        detection=$(bash "$DETECT_SCRIPT" "$parent_dir" 2>/dev/null || echo "none|||none")
+        local detected_type
+        detected_type=$(echo "$detection" | cut -d'|' -f1)
+
+        if [ "$detected_type" != "none" ]; then
+          local detected_lang
+          detected_lang=$(echo "$detection" | cut -d'|' -f2)
+          local detected_framework
+          detected_framework=$(echo "$detection" | cut -d'|' -f3)
+          # Usa append seguro com lock via arquivo temporario
+          echo "${rel_path}|${detected_type}|${detected_lang}|${detected_framework}" >> "/tmp/fh_nested_$$.txt"
+        fi
+      done
+
+      # Le os resultados aninhados
+      if [ -f "/tmp/fh_nested_$$.txt" ]; then
+        local nested_line
+        while IFS= read -r nested_line; do
+          [ -z "$nested_line" ] && continue
+          local ns_name
+          ns_name=$(echo "$nested_line" | cut -d'|' -f1)
+          [ "${seen_dirs["$ns_name"]:-0}" -eq 1 ] && continue
+          seen_dirs["$ns_name"]=1
+          results="$results${nested_line}"$'\n'
+          count=$((count + 1))
+        done < "/tmp/fh_nested_$$.txt"
+        rm -f "/tmp/fh_nested_$$.txt"
+      fi
+    fi
+  fi
+
+  if [ "$count" -ge 2 ]; then
+    echo "$results"
+  else
+    echo ""
+  fi
+}
+
+# --- ECOSYSTEM.md generator -------------------------------------------------
+
+generate_ecosystem_md() {
+  local target_path="$1"
+  local subprojects="$2"
+  local ecosystem_name
+  ecosystem_name=$(basename "$target_path")
+
+  # Monta tabela de stack
+  local stack_table=""
+  local architecture_lines=""
+  local per_project_links=""
+  local ports_urls=""
+  local sub_api=""
+  local sub_app=""
+  local sub_web=""
+  local sub_nginx=""
+  local local_dev_guide=""
+
+  # Lista de tipos para o diagrama
+  local types_list=()
+  local names_list=()
+
+  while IFS='|' read -r subname subtype sublang subframework; do
+    [ -z "$subname" ] && continue
+    subframework="${subframework:-}"
+    [ -z "$subframework" ] && subframework="-"
+    stack_table="${stack_table}| \`${subname}\` | ${subtype} | ${sublang} | ${subframework} |"$'\n'
+
+    local sub_path="${subname}/CLAUDE.md"
+    per_project_links="${per_project_links}- [${subname}](${sub_path}) — ${subtype} (${sublang})"$'\n'
+
+    ports_urls="${ports_urls}| ${subname} | \`:\` | \`http://localhost:\` |"$'\n'
+
+    types_list+=("$subtype")
+    names_list+=("$subname")
+
+    # Guarda nomes para template
+    case "$subtype" in
+      backend-api) sub_api="$subname" ;;
+      mobile-app)  sub_app="$subname" ;;
+      web-frontend) sub_web="$subname" ;;
+      infra-service) sub_nginx="$subname" ;;
+    esac
+  done < <(echo "$subprojects")
+
+  # Diagrama ASCII basico
+  if [ -n "$sub_nginx" ]; then
+    architecture_lines="                    ┌─────────────┐"
+    architecture_lines="$architecture_lines"$'\n'"                    │  ${sub_nginx}  │"
+    architecture_lines="$architecture_lines"$'\n'"                    │  (proxy)    │"
+    architecture_lines="$architecture_lines"$'\n'"                    └──────┬──────┘"
+    architecture_lines="$architecture_lines"$'\n'"                           │"
+    architecture_lines="$architecture_lines"$'\n'"             ┌─────────────┼─────────────┐"
+    architecture_lines="$architecture_lines"$'\n'"             │             │             │"
+    architecture_lines="$architecture_lines"$'\n'"    ┌────────┴────────┐  ┌──┴──────────┐"
+  else
+    architecture_lines="    ┌──────────────────┐"
+  fi
+
+  local first_backend=""
+  local first_web=""
+  for i in "${!types_list[@]}"; do
+    case "${types_list[$i]}" in
+      backend-api)
+        [ -z "$first_backend" ] && first_backend="${names_list[$i]}"
+        architecture_lines="$architecture_lines"$'\n'"    │  ${names_list[$i]}  │"
+        architecture_lines="$architecture_lines"$'\n'"    │  (API)       │"
+        architecture_lines="$architecture_lines"$'\n'"    └───────────────┘"
+        ;;
+      web-frontend)
+        [ -z "$first_web" ] && first_web="${names_list[$i]}"
+        architecture_lines="$architecture_lines"$'\n'"    │  ${names_list[$i]}  │"
+        architecture_lines="$architecture_lines"$'\n'"    │  (Web)       │"
+        architecture_lines="$architecture_lines"$'\n'"    └───────────────┘"
+        ;;
+      mobile-app)
+        architecture_lines="$architecture_lines"$'\n'"    │  ${names_list[$i]}  │"
+        architecture_lines="$architecture_lines"$'\n'"    │  (Mobile)    │"
+        architecture_lines="$architecture_lines"$'\n'"    └───────────────┘"
+        ;;
+      infra-service)
+        : # ja foi tratado no topo
+        ;;
+      *)
+        architecture_lines="$architecture_lines"$'\n'"    │  ${names_list[$i]}  │"
+        architecture_lines="$architecture_lines"$'\n'"    └───────────────┘"
+        ;;
+    esac
+  done
+
+  # Guia de desenvolvimento local
+  if [ -n "$first_backend" ]; then
+    local_dev_guide="1. Inicie o backend: \`cd ${first_backend} && npm run start:dev\`"
+  fi
+  if [ -n "$first_web" ]; then
+    local_dev_guide="$local_dev_guide"$'\n'"2. Inicie o frontend: \`cd ${first_web} && npm run dev\`"
+  fi
+  if [ -n "$sub_app" ]; then
+    local_dev_guide="$local_dev_guide"$'\n'"3. Inicie o app: \`cd ${sub_app} && flutter run\`"
+  fi
+  if [ -n "$sub_nginx" ]; then
+    local_dev_guide="$local_dev_guide"$'\n'"4. Inicie o proxy: \`cd ${sub_nginx} && nginx -c nginx.conf\`"
+  fi
+
+  # Dependencias
+  local dep_list=""
+  if [ -n "$sub_api" ]; then
+    dep_list="- **${sub_api}**: backend que expõe a API REST/GraphQL"
+  fi
+  if [ -n "$sub_app" ]; then
+    dep_list="$dep_list"$'\n'"- **${sub_app}**: app mobile que consome \`${sub_api:-api}\`"
+  fi
+  if [ -n "$sub_web" ]; then
+    dep_list="$dep_list"$'\n'"- **${sub_web}**: web frontend que consome \`${sub_api:-api}\`"
+  fi
+  if [ -n "$sub_nginx" ]; then
+    dep_list="$dep_list"$'\n'"- **${sub_nginx}**: proxy reverso para \`${sub_api:-api}\` e \`${sub_web:-web}\`"
+  fi
+
+  local template_file="$FACEHUGGER_DIR/templates/shared/ECOSYSTEM.md.tpl"
+  if [ -f "$template_file" ]; then
+    local content
+    content=$(cat "$template_file")
+    content="${content//\{\{ECOSYSTEM_NAME\}\}/$ecosystem_name}"
+    content="${content//\{\{STACK_TABLE\}\}/$stack_table}"
+    content="${content//\{\{ARCHITECTURE_DIAGRAM\}\}/$architecture_lines}"
+    content="${content//\{\{DEPENDENCIES_LIST\}\}/$dep_list}"
+    content="${content//\{\{SUB_API\}\}/${sub_api:-api}}"
+    content="${content//\{\{SUB_APP\}\}/${sub_app:-app}}"
+    content="${content//\{\{SUB_WEB\}\}/${sub_web:-web}}"
+    content="${content//\{\{SUB_NGINX\}\}/${sub_nginx:-nginx}}"
+    content="${content//\{\{LOCAL_DEV_GUIDE\}\}/$local_dev_guide}"
+    content="${content//\{\{PER_PROJECT_LINKS\}\}/$per_project_links}"
+    content="${content//\{\{PORTS_URLS\}\}/$ports_urls}"
+    echo "$content" > "$target_path/ECOSYSTEM.md"
+  fi
+}
+
+# --- Ecosystem catch command ------------------------------------------------
+
+cmd_catch_ecosystem() {
+  local target_path="$1"
+  local subprojects_raw="$2"
+  local mode="$3"
+
+  local ecosystem_name
+  ecosystem_name=$(basename "$target_path")
+  local injection="${injection:-principal}"
+  local final_name="CLAUDE.md"
+
+  # Le as configuracoes de injecao/rename se nao estiverem setadas
+  if [ "$mode" != "rapido" ]; then
+    echo ""
+    echo "Modo de injecao:"
+    echo "  [1] Silenciosa - nada no git"
+    echo "  [2] Principal - AGENT-SEED.md + CONTEXT.md"
+    echo "  [3] Completa - tudo versionado"
+    read -r -p "  Escolha [1-3] (Enter=2): " i_choice
+    case "${i_choice:-2}" in
+      1) injection="silenciosa" ;;
+      2) injection="principal" ;;
+      3) injection="completa" ;;
+    esac
+
+    echo ""
+    echo "Renomear AGENT-SEED.md para qual ferramenta?"
+    echo "  [1] Claude Code -> CLAUDE.md"
+    echo "  [2] Cursor -> .cursorrules"
+    echo "  [3] Windsurf -> .windsurfrules"
+    echo "  [4] Manter AGENT-SEED.md"
+    echo "  [5] Outro (especificar)"
+    read -r -p "  Escolha [1-5] (Enter=1): " r_choice
+    case "${r_choice:-1}" in
+      1) final_name="CLAUDE.md" ;;
+      2) final_name=".cursorrules" ;;
+      3) final_name=".windsurfrules" ;;
+      5)
+        read -r -p "  Nome do arquivo: " final_name
+        [ -z "$final_name" ] && final_name="CLAUDE.md"
+        ;;
+      *) final_name="CLAUDE.md" ;;
+    esac
+  fi
+
+  # Converte raw para lista
+  local subprojects=()
+  while IFS='|' read -r subname subtype sublang subframework; do
+    [ -z "$subname" ] && continue
+    subprojects+=("${subname}|${subtype}|${sublang}|${subframework}")
+  done < <(echo "$subprojects_raw")
+
+  # Permite editar a lista
+  if [ "$mode" != "rapido" ]; then
+    echo ""
+    echo "Projetos detectados no ecossistema:"
+    local idx=1
+    for sp in "${subprojects[@]}"; do
+      local sn=$(echo "$sp" | cut -d'|' -f1)
+      local st=$(echo "$sp" | cut -d'|' -f2)
+      local sl=$(echo "$sp" | cut -d'|' -f3)
+      local sf=$(echo "$sp" | cut -d'|' -f4)
+      echo "  [$idx] $sn => $st ($sl${sf:+ / $sf})"
+      idx=$((idx + 1))
+    done
+    echo ""
+    if ! confirm "  Lista correta?"; then
+      echo "  Editando lista de projetos..."
+      local new_list=()
+      idx=1
+      for sp in "${subprojects[@]}"; do
+        local sn=$(echo "$sp" | cut -d'|' -f1)
+        local st=$(echo "$sp" | cut -d'|' -f2)
+        if confirm "    Manter $sn como $st?"; then
+          new_list+=("$sp")
+        else
+          echo "    Tipos disponiveis:"
+          local type_opts=("Backend API" "Mobile App" "Web Frontend" "Infra/Servico" "Data Pipeline" "Sistema Legado" "Remover projeto")
+          local type_choice
+          type_choice=$(menu_select "    Novo tipo" "${type_opts[@]}")
+          case "$type_choice" in
+            1) new_list+=("${sn}|backend-api|${sublang}|${sf}") ;;
+            2) new_list+=("${sn}|mobile-app|${sublang}|${sf}") ;;
+            3) new_list+=("${sn}|web-frontend|${sublang}|${sf}") ;;
+            4) new_list+=("${sn}|infra-service|${sublang}|${sf}") ;;
+            5) new_list+=("${sn}|data-pipeline|${sublang}|${sf}") ;;
+            6) new_list+=("${sn}|legacy-system|${sublang}|${sf}") ;;
+            7) echo "    Removido $sn" ;;
+          esac
+        fi
+        idx=$((idx + 1))
+      done
+      subprojects=("${new_list[@]}")
+    fi
+  fi
+
+  # Gera arquivos para cada subprojeto
+  echo ""
+  echo "Gerando arquivos para cada projeto..."
+  echo ""
+
+  for sp in "${subprojects[@]}"; do
+    local subname=$(echo "$sp" | cut -d'|' -f1)
+    local subtype=$(echo "$sp" | cut -d'|' -f2)
+    local sublang=$(echo "$sp" | cut -d'|' -f3)
+    local subframework=$(echo "$sp" | cut -d'|' -f4)
+    local sub_path="$target_path/$subname"
+
+    if [ ! -d "$sub_path" ]; then
+      echo "  [SKIP] $subname — diretorio nao encontrado"
+      continue
+    fi
+
+    echo "  --- $subname ($subtype) ---"
+
+    # Seleciona manifesto
+    local manifest_file="$FACEHUGGER_DIR/core/manifests/${subtype}.yaml"
+    if [ ! -f "$manifest_file" ]; then
+      manifest_file="$FACEHUGGER_DIR/core/manifests/backend-api.yaml"
+    fi
+
+    # Skills
+    local selected_skills_block=""
+    selected_skills_block=$(select_skills "$manifest_file" "$mode")
+
+    # Injeta regras
+    local injected_rules=""
+    injected_rules=$(inject_rules "$manifest_file")
+
+    # Bloco de skills padrao (fallback)
+    if [ -z "$selected_skills_block" ]; then
+      local default_skills_block
+      default_skills_block=$(cat "$FACEHUGGER_DIR/templates/shared/agent-skills-block.md" 2>/dev/null || true)
+      selected_skills_block="${default_skills_block:-}"
+    fi
+
+    # Gera AGENT-SEED.md
+    local template_file="$FACEHUGGER_DIR/templates/${subtype}/AGENT-SEED.md.tpl"
+    local agent_seed_file="$sub_path/AGENT-SEED.md"
+    if [ -f "$template_file" ]; then
+      local template_content
+      template_content=$(cat "$template_file")
+      local footer=""
+      [ -f "$FACEHUGGER_DIR/templates/shared/footer.md" ] && footer=$(cat "$FACEHUGGER_DIR/templates/shared/footer.md")
+
+      local seed_content="${template_content//\{\{PROJECT_NAME\}\}/$subname}"
+      seed_content="${seed_content//\{\{PROJECT_PHILOSOPHY\}\}/Projeto integrante do ecossistema \`${ecosystem_name}\`}"
+      seed_content="${seed_content//\{\{INJECTED_RULES\}\}/$injected_rules}"
+      seed_content="${seed_content//\{\{AGENT_SKILLS_BLOCK\}\}/$selected_skills_block}"
+      seed_content="${seed_content//\{\{FOOTER\}\}/$footer}"
+      echo "$seed_content" > "$agent_seed_file"
+    else
+      cat > "$agent_seed_file" <<EOF
+# AGENT-SEED.md - $subname
+
+> Regras de governanca do agente. Leia antes de qualquer alteracao no codigo.
+> Gerado por Facehugger v$VERSION
+
+## Regras de Engenharia
+
+$injected_rules
+
+## Comportamento do Agente
+
+1. Antes de escrever codigo novo, leia CONTEXT.md e explore a base existente.
+2. Este projeto faz parte do ecossistema \`$ecosystem_name\`.
+
+## Ferramentas Recomendadas
+
+- **repomix**: \`npx repomix\` para contexto completo do projeto
+EOF
+    fi
+
+    # Gera CONTEXT.md
+    local context_template="$FACEHUGGER_DIR/templates/${subtype}/CONTEXT.md.tpl"
+    if [ -f "$context_template" ]; then
+      local ctx_content
+      ctx_content=$(cat "$context_template")
+      ctx_content="${ctx_content//\{\{PROJECT_NAME\}\}/$subname}"
+      echo "$ctx_content" > "$sub_path/CONTEXT.md"
+    else
+      cat > "$sub_path/CONTEXT.md" <<EOF
+# $subname - Contexto
+
+> Linguagem ubiqua do dominio. Mantenha atualizado conforme o projeto evolui.
+
+## Linguagem
+
+**TODO**: Defina os termos do dominio aqui.
+
+---
+
+*Gerado por Facehugger v$VERSION.*
+EOF
+    fi
+
+    echo "  AGENT-SEED.md + CONTEXT.md gerados em $subname/"
+
+    # Renomeia
+    if [ "$final_name" != "AGENT-SEED.md" ]; then
+      if [ -f "$sub_path/$final_name" ]; then
+        if [ "$mode" = "rapido" ] || confirm "  $final_name ja existe em $subname. Sobrescrever?" "n"; then
+          mv "$agent_seed_file" "$sub_path/$final_name"
+          echo "  Renomeado para $final_name em $subname/"
+        fi
+      else
+        mv "$agent_seed_file" "$sub_path/$final_name"
+      fi
+    fi
+
+    # Modo Silenciosa: adiciona ao .gitignore do subprojeto
+    if [ "$injection" = "silenciosa" ]; then
+      local gitignore_file="$sub_path/.gitignore"
+      local block="# Facehugger generated"
+      if [ -f "$gitignore_file" ] && grep -q "$block" "$gitignore_file" 2>/dev/null; then
+        : # ja existe
+      else
+        {
+          echo ""
+          echo "# Facehugger generated"
+          echo "AGENT-SEED.md"
+          echo "CONTEXT.md"
+          echo "# End Facehugger"
+        } >> "$gitignore_file" 2>/dev/null || true
+      fi
+    fi
+
+    echo ""
+  done
+
+  # Modo Interativo: gera artefatos de entrevista para cada subprojeto
+  if [ "$mode" = "interactive" ]; then
+    echo "Preparando entrevista de dominio para cada projeto..."
+    echo ""
+    for sp in "${subprojects[@]}"; do
+      local subname=$(echo "$sp" | cut -d'|' -f1)
+      local subtype=$(echo "$sp" | cut -d'|' -f2)
+      local sub_path="$target_path/$subname"
+
+      if [ ! -d "$sub_path" ]; then
+        continue
+      fi
+
+      # Gera interview.md em docs/setup/
+      generate_interview_artifacts "$sub_path" "$subname" "$subtype" "$ecosystem_name"
+
+      # Prepara instrucoes de entrevista
+      prepare_interview_instructions "$sub_path" "$subname" "$subtype" "$ecosystem_name"
+
+      echo "  Entrevista preparada em $subname/docs/setup/interview.md"
+    done
+  fi
+
+  # Gera ECOSYSTEM.md na raiz
+  echo "Gerando ECOSYSTEM.md na raiz..."
+  generate_ecosystem_md "$target_path" "$subprojects_raw"
+
+  echo ""
+  echo "  --- Catch (ecossistema) complete!"
+  echo "  $(basename "$target_path") esta pronto com ${#subprojects[@]} projetos."
+
+  if [ "$mode" = "interactive" ]; then
+    echo ""
+    echo "  >>> ACAO NECESSARIA <<<"
+    echo "  Setup parcial concluido! Para completar a configuracao:"
+    echo "  1. Abra o diretorio do projeto no Claude Code / fcc-claude"
+    echo "  2. O AI vai ler o CLAUDE.md e conduzir uma entrevista de dominio"
+    echo "  3. Apos a entrevista, execute: ! ./facehugger finalize $target_path"
+    echo "  --------------------------"
+  fi
+
+  echo "  --------------------------"
+}
+
+# --- Catch command ---------------------------------------------------------
 
 cmd_catch() {
   local target_path="$1"
@@ -283,16 +1169,14 @@ cmd_catch() {
 
   show_banner
 
-  # Resolve caminho absoluto
   target_path="$(cd "$target_path" 2>/dev/null && pwd)" || {
-    echo "❌ Erro: diretório '$target_path' não encontrado"
+    echo "Erro: diretorio '$target_path' nao encontrado" >&2
     exit 1
   }
 
-  echo "🔍 Alvo: $target_path"
+  echo "Alvo: $target_path"
   echo ""
 
-  # Detecta modo de execução
   local mode="$mode_override"
   if [ -z "$mode" ]; then
     IFS='|' read -r mode injection tracker agent_tool <<< "$(load_config "${config_name:-default}")"
@@ -302,8 +1186,26 @@ cmd_catch() {
   echo "  Modo: $mode"
   echo ""
 
-  # ─── Fase 1: Detecção ────────────────────────────────────────
-  echo "🔎 Detectando tipo do projeto..."
+  # --- Fase 0: Detectar escopo (single vs ecossistema) --------------------
+  if [ "$mode" != "rapido" ]; then
+    local ecosystem_subprojects
+    ecosystem_subprojects=$(detect_ecosystem "$target_path")
+    if [ -n "$ecosystem_subprojects" ]; then
+      echo "Subprojetos detectados:"
+      while IFS='|' read -r subname subtype sublang subframework; do
+        [ -z "$subname" ] && continue
+        echo "  - $subname ($subtype / $sublang${subframework:+ / $subframework})"
+      done < <(echo "$ecosystem_subprojects")
+      echo ""
+      if confirm "  Configurar como ecossistema multi-projeto?" "y"; then
+        cmd_catch_ecosystem "$target_path" "$ecosystem_subprojects" "$mode"
+        return
+      fi
+    fi
+  fi
+
+  # --- Fase 1: Deteccao --------------------------------------------------
+  echo "Detectando tipo do projeto..."
 
   local detect_result
   if [ -f "$DETECT_SCRIPT" ]; then
@@ -315,15 +1217,11 @@ cmd_catch() {
   IFS='|' read -r detected_type detected_lang detected_framework detected_confidence <<< "$detect_result"
 
   if [ "$detected_confidence" = "none" ] || [ "$detected_confidence" = "low" ]; then
-    echo "  ⚠️  Nenhum arquivo de configuração conhecido encontrado."
-    # Fallback manual — perguntar ao usuário
+    echo "  Nenhum arquivo de configuracao conhecido encontrado."
     echo ""
     echo "  Vamos configurar manualmente:"
-
-    echo "  Qual o tipo do projeto?"
-    local type_options=("Backend API" "Mobile App" "Web Frontend" "Infra/Serviço" "Data Pipeline" "Sistema Legado")
-    local type_choice=$(menu_select "  Escolha" "${type_options[@]}")
-
+    local type_options=("Backend API" "Mobile App" "Web Frontend" "Infra/Servico" "Data Pipeline" "Sistema Legado")
+    local type_choice=$(menu_select "  Escolha o tipo" "${type_options[@]}")
     case "$type_choice" in
       1) detected_type="backend-api"; detected_lang="TypeScript" ;;
       2) detected_type="mobile-app"; detected_lang="Dart" ;;
@@ -334,14 +1232,14 @@ cmd_catch() {
       *) detected_type="backend-api"; detected_lang="TypeScript" ;;
     esac
   else
-    echo "  ✅ Tipo detectado: $detected_type"
-    echo "  ✅ Linguagem: $detected_lang"
-    echo "  ✅ Framework: $detected_framework"
+    echo "  Tipo detectado: $detected_type"
+    echo "  Linguagem: $detected_lang"
+    echo "  Framework: $detected_framework"
 
     if [ "$mode" != "rapido" ]; then
-      if ! confirm "  📋 Confirma a detecção?"; then
+      if ! confirm "  Confirma a deteccao?"; then
         echo "  Vamos reconfigurar manualmente:"
-        local type_options=("Backend API" "Mobile App" "Web Frontend" "Infra/Serviço" "Data Pipeline" "Sistema Legado")
+        local type_options=("Backend API" "Mobile App" "Web Frontend" "Infra/Servico" "Data Pipeline" "Sistema Legado")
         local type_choice=$(menu_select "  Escolha o tipo" "${type_options[@]}")
         case "$type_choice" in
           1) detected_type="backend-api" ;;
@@ -356,16 +1254,15 @@ cmd_catch() {
   fi
 
   echo ""
-  echo "  ────────────────────────────────────────────────"
-  echo "  📋 Resumo da detecção:"
+  echo "  --- Resumo da deteccao ---"
   echo "    Tipo: $detected_type"
   echo "    Linguagem: $detected_lang"
   echo "    Framework: $detected_framework"
-  echo "  ────────────────────────────────────────────────"
+  echo "  -------------------------"
   echo ""
 
-  # ─── Fase 2: Manifesto ──────────────────────────────────────
-  echo "📋 Selecionando manifesto..."
+  # --- Fase 2: Manifesto -------------------------------------------------
+  echo "Selecionando manifesto..."
 
   local manifest_file="$FACEHUGGER_DIR/core/manifests/${detected_type}.yaml"
   if [ ! -f "$manifest_file" ]; then
@@ -375,30 +1272,28 @@ cmd_catch() {
   echo "  Manifesto sugerido: $detected_type"
   if [ "$mode" != "rapido" ]; then
     if ! confirm "  Usar este manifesto?"; then
-      echo "  Manifestos disponíveis:"
+      echo "  Manifestos disponiveis:"
       local manifests=()
       local i=1
       while IFS= read -r m; do
         local mname=$(basename "$m" .yaml)
         local mdesc=$(grep -m1 'description:' "$m" 2>/dev/null | sed 's/description: //')
-        echo "    [$i] $mname — $mdesc"
+        echo "    [$i] $mname - $mdesc"
         manifests+=("$mname")
         i=$((i + 1))
       done < <(ls "$FACEHUGGER_DIR/core/manifests/"*.yaml 2>/dev/null || echo "")
-
       local choice
-      read -r -p "  Escolha [1-${#manifests[@]}]: " choice || true; choice="${choice:-}"
-      choice="${choice:-1}"
+      read -r -p "  Escolha [1-${#manifests[@]}]: " choice || true; choice="${choice:-1}"
       local selected="${manifests[$((choice - 1))]}"
       [ -n "$selected" ] && detected_type="$selected"
     fi
   fi
 
-  # ─── Fase 3: Issue tracker ──────────────────────────────────
+  # --- Fase 3: Issue tracker ---------------------------------------------
   local tracker="local"
   if [ "$mode" != "rapido" ]; then
     echo ""
-    echo "📋 Issue tracker:"
+    echo "Issue tracker:"
     echo "  [1] GitHub"
     echo "  [2] GitLab"
     echo "  [3] Local (markdown)"
@@ -410,14 +1305,14 @@ cmd_catch() {
     esac
   fi
 
-  # ─── Fase 4: Modo de injeção ────────────────────────────────
+  # --- Fase 4: Modo de injecao -------------------------------------------
   local injection="${injection:-principal}"
   if [ "$mode" != "rapido" ]; then
     echo ""
-    echo "📋 Modo de injeção:"
-    echo "  [1] 🕵️  Silenciosa — nada no git"
-    echo "  [2] 🎯  Principal — AGENT-SEED.md + CONTEXT.md"
-    echo "  [3] 📦  Completa — tudo versionado"
+    echo "Modo de injecao:"
+    echo "  [1] Silenciosa - nada no git"
+    echo "  [2] Principal - AGENT-SEED.md + CONTEXT.md"
+    echo "  [3] Completa - tudo versionado"
     read -r -p "  Escolha [1-3] (Enter=2): " i_choice
     case "${i_choice:-2}" in
       1) injection="silenciosa" ;;
@@ -426,130 +1321,142 @@ cmd_catch() {
     esac
   fi
 
-  # ─── Fase 5: Gerar ──────────────────────────────────────────
+  # --- Fase 5: Skills ----------------------------------------------------
   echo ""
-  echo "📄 Gerando arquivos no projeto alvo..."
+  echo "Skills do Matt Pocock..."
+  local selected_skills_block=""
+  selected_skills_block=$(select_skills "$manifest_file" "$mode")
+
+  # --- Fase 6: Gerar -----------------------------------------------------
+  echo ""
+  echo "Gerando arquivos no projeto alvo..."
   echo ""
 
   local target_name
   target_name=$(basename "$target_path")
 
-  # Gera AGENT-SEED.md
   local agent_seed_file="$target_path/AGENT-SEED.md"
   if [ -f "$agent_seed_file" ] && [ "$mode" != "rapido" ]; then
-    if ! confirm "  AGENT-SEED.md já existe. Sobrescrever?"; then
+    if ! confirm "  AGENT-SEED.md ja existe. Sobrescrever?"; then
       if confirm "  Fazer backup?"; then
         cp "$agent_seed_file" "${agent_seed_file}.bak.$(date +%Y%m%d%H%M%S)"
-        echo "  ✅ Backup criado"
+        echo "  Backup criado"
       fi
     fi
   fi
 
-  cat > "$agent_seed_file" <<EOF
-# AGENT-SEED.md — $target_name
+  local injected_rules=""
+  injected_rules=$(inject_rules "$manifest_file")
 
-> Regras de governança do agente. Leia antes de qualquer alteração no código.
-> Gerado por 🎭 Facehugger v$VERSION
+  # Bloco de skills padrao (fallback se select_skills nao gerou nada)
+  if [ -z "$selected_skills_block" ]; then
+    local default_skills_block
+    default_skills_block=$(cat "$FACEHUGGER_DIR/templates/shared/agent-skills-block.md" 2>/dev/null || true)
+    selected_skills_block="${default_skills_block:-}"
+  fi
 
-## Filosofia do Projeto
+  local template_file="$FACEHUGGER_DIR/templates/${detected_type}/AGENT-SEED.md.tpl"
+  if [ -f "$template_file" ]; then
+    local template_content
+    template_content=$(cat "$template_file")
+    local footer=""
+    [ -f "$FACEHUGGER_DIR/templates/shared/footer.md" ] && footer=$(cat "$FACEHUGGER_DIR/templates/shared/footer.md")
 
-*Uma filosofia definida pelo usuário durante o setup.*
+    local seed_content="${template_content//\{\{PROJECT_NAME\}\}/$target_name}"
+    seed_content="${seed_content//\{\{INJECTED_RULES\}\}/$injected_rules}"
+    seed_content="${seed_content//\{\{AGENT_SKILLS_BLOCK\}\}/$selected_skills_block}"
+    seed_content="${seed_content//\{\{FOOTER\}\}/$footer}"
+    echo "$seed_content" > "$agent_seed_file"
+  else
+    cat > "$agent_seed_file" <<EOF
+# AGENT-SEED.md - $target_name
+
+> Regras de governanca do agente. Leia antes de qualquer alteracao no codigo.
+> Gerado por Facehugger v$VERSION
 
 ## Regras de Engenharia
 
-$(if [ -f "$manifest_file" ]; then
-  echo "Regras carregadas do manifesto: $detected_type"
-  echo ""
-  while IFS=': ' read -r key value; do
-    [ "$key" = "book" ] && echo "- ${value} ($(grep -A2 "id: ${value}" "$FACEHUGGER_DIR/core/catalog.yaml" 2>/dev/null | grep 'label:' | sed 's/  label: //'))"
-  done < <(grep -A3 '  - book:' "$manifest_file" | grep -E '(book|version)' | paste - - | sed 's/ *//g')
-else
-  echo "Nenhum manifesto selecionado."
-fi)
+$injected_rules
 
 ## Comportamento do Agente
 
-1. Antes de escrever código novo, leia CONTEXT.md e explore a base existente.
-2. Consulte o source real de dependências via open-source quando disponível.
-3. Use repomix para contexto completo do projeto quando necessário.
-
-## Agent Skills
-
-$(if [ -f "$FACEHUGGER_DIR/templates/shared/agent-skills-block.md" ]; then cat "$FACEHUGGER_DIR/templates/shared/agent-skills-block.md"; else
-echo "Skills configurados via Facehugger."
-fi)
+1. Antes de escrever codigo novo, leia CONTEXT.md e explore a base existente.
 
 ## Ferramentas Recomendadas
 
 - **repomix**: \`npx repomix\` para contexto completo do projeto
-$(if [ -f "$FACEHUGGER_DIR/templates/shared/footer.md" ]; then cat "$FACEHUGGER_DIR/templates/shared/footer.md"; fi)
 
-## 🚧 MCP Servers — A configurar
-
-Este projeto pode se beneficiar de MCP Servers para:
-- Banco de dados (PostgreSQL, SQLite)
-- APIs externas
+## MCP Servers - A configurar
 
 Consulte https://modelcontextprotocol.io para configurar.
 EOF
+  fi
 
-  echo "  ✅ AGENT-SEED.md gerado"
+  echo "  AGENT-SEED.md gerado"
 
-  # Gera CONTEXT.md
+  # --- CONTEXT.md ---------------------------------------------------------
   local context_file="$target_path/CONTEXT.md"
-  if [ ! -f "$context_file" ] || [ "$mode" = "fresh" ] || confirm "  CONTEXT.md já existe. Sobrescrever?" "n"; then
-    cat > "$context_file" <<EOF
-# $target_name — Contexto
+  if [ ! -f "$context_file" ] || [ "$mode" = "fresh" ] || confirm "  CONTEXT.md ja existe. Sobrescrever?" "n"; then
+    local context_template="$FACEHUGGER_DIR/templates/${detected_type}/CONTEXT.md.tpl"
+    if [ -f "$context_template" ]; then
+      local ctx_content
+      ctx_content=$(cat "$context_template")
+      ctx_content="${ctx_content//\{\{PROJECT_NAME\}\}/$target_name}"
+      echo "$ctx_content" > "$context_file"
+    else
+      cat > "$context_file" <<EOF
+# $target_name - Contexto
 
-> Linguagem ubíqua do domínio. Mantenha atualizado conforme o projeto evolui.
+> Linguagem ubiqua do dominio. Mantenha atualizado conforme o projeto evolui.
 
 ## Linguagem
 
-**TODO**: Defina os termos do domínio aqui.
-
-## Regras
-
-- Adicione termos específicos do domínio do projeto.
-- Evite conceitos genéricos de programação.
-- Seja opinativo: escolha o termo correto e liste sinônimos a evitar.
+**TODO**: Defina os termos do dominio aqui.
 
 ---
 
-*Gerado por 🎭 Facehugger v$VERSION. Preencha os termos do seu domínio.*
+*Gerado por Facehugger v$VERSION.*
 EOF
-    echo "  ✅ CONTEXT.md gerado"
+    fi
+    echo "  CONTEXT.md gerado"
   else
-    echo "  ⏭️  CONTEXT.md mantido"
+    echo "  CONTEXT.md mantido"
   fi
 
-  # ─── Modo Silenciosa: adiciona ao .gitignore ────────────────
+  # --- Modo Interativo: artefatos de entrevista --------------------------
+  if [ "$mode" = "interactive" ]; then
+    local eco_name
+    eco_name=$(basename "$target_path")
+    generate_interview_artifacts "$target_path" "$target_name" "$detected_type" ""
+  fi
+
+  # --- Modo Silenciosa: adiciona ao .gitignore ---------------------------
   if [ "$injection" = "silenciosa" ]; then
     local gitignore_file="$target_path/.gitignore"
-    local block="# 🎭 Facehugger generated"
+    local block="# Facehugger generated"
     if [ -f "$gitignore_file" ] && grep -q "$block" "$gitignore_file" 2>/dev/null; then
-      echo "  ⏭️  Bloco Facehugger já existe no .gitignore"
+      echo "  Bloco Facehugger ja existe no .gitignore"
     else
-      cat >> "$gitignore_file" 2>/dev/null || touch "$gitignore_file"
-      cat >> "$gitignore_file" <<EOF
-
-# 🎭 Facehugger generated
-AGENT-SEED.md
-CONTEXT.md
-docs/agents/
-# 🎭 End Facehugger
-EOF
-      echo "  ✅ Bloco adicionado ao .gitignore (modo silenciosa)"
+      {
+        echo ""
+        echo "# Facehugger generated"
+        echo "AGENT-SEED.md"
+        echo "CONTEXT.md"
+        echo "docs/agents/"
+        echo "# End Facehugger"
+      } >> "$gitignore_file" 2>/dev/null || touch "$gitignore_file"
+      echo "  Bloco adicionado ao .gitignore (modo silenciosa)"
     fi
   fi
 
-  # ─── Renomear AGENT-SEED.md ─────────────────────────────────
+  # --- Renomear AGENT-SEED.md --------------------------------------------
   local final_name="AGENT-SEED.md"
   if [ "$mode" != "rapido" ]; then
     echo ""
-    echo "📋 Renomear AGENT-SEED.md?"
-    echo "  [1] Claude Code → CLAUDE.md"
-    echo "  [2] Cursor → .cursorrules"
-    echo "  [3] Windsurf → .windsurfrules"
+    echo "Renomear AGENT-SEED.md?"
+    echo "  [1] Claude Code -> CLAUDE.md"
+    echo "  [2] Cursor -> .cursorrules"
+    echo "  [3] Windsurf -> .windsurfrules"
     echo "  [4] Manter AGENT-SEED.md"
     echo "  [5] Outro (especificar)"
     read -r -p "  Escolha [1-5] (Enter=4): " r_choice
@@ -566,33 +1473,54 @@ EOF
 
     if [ "$final_name" != "AGENT-SEED.md" ]; then
       if [ -f "$target_path/$final_name" ]; then
-        if confirm "  $final_name já existe. Sobrescrever?" "n"; then
+        if confirm "  $final_name ja existe. Sobrescrever?" "n"; then
           mv "$agent_seed_file" "$target_path/$final_name"
-          echo "  ✅ Renomeado para $final_name"
+          echo "  Renomeado para $final_name"
         fi
       else
         mv "$agent_seed_file" "$target_path/$final_name"
-        echo "  ✅ Renomeado para $final_name"
+        echo "  Renomeado para $final_name"
       fi
     fi
   fi
 
+  # --- Modo Interativo: prepara instrucoes --------------------------------
+  if [ "$mode" = "interactive" ]; then
+    if [ -f "$target_path/$final_name" ]; then
+      local ec_name
+      ec_name=$(basename "$target_path")
+      prepare_interview_instructions "$target_path" "$target_name" "$detected_type" ""
+    fi
+  fi
+
   echo ""
-  echo "  ────────────────────────────────────────────────"
-  echo "  🎯 Catch complete! $(basename "$target_path") está pronto."
-  echo "  ────────────────────────────────────────────────"
+  echo "  --- Catch complete!"
+  echo "  $(basename "$target_path") esta pronto."
+
+  if [ "$mode" = "interactive" ]; then
+    echo ""
+    echo "  >>> ACAO NECESSARIA <<<"
+    echo "  Setup parcial concluido! Para completar a configuracao:"
+    echo "  1. Abra o diretorio do projeto no Claude Code / fcc-claude"
+    echo "  2. O AI vai ler o CLAUDE.md e conduzir uma entrevista de dominio"
+    echo "  3. Apos a entrevista, execute: ! ./facehugger finalize $target_path"
+  fi
+
+  echo "  --------------------------"
   echo ""
 
-  # ─── Multi-projeto ──────────────────────────────────────────
-  if confirm "  Quer configurar outro projeto?"; then
-    read -r -p "  Caminho do próximo projeto: " next_target
-    if [ -n "$next_target" ]; then
-      cmd_catch "$next_target" "$mode"
+  # --- Multi-projeto -----------------------------------------------------
+  if [ "$mode" != "rapido" ]; then
+    if confirm "  Quer configurar outro projeto?"; then
+      read -r -p "  Caminho do proximo projeto: " next_target || true
+      if [ -n "$next_target" ]; then
+        cmd_catch "$next_target" "$mode"
+      fi
     fi
   fi
 }
 
-# ─── Main ──────────────────────────────────────────────────────────────────
+# --- Main -------------------------------------------------------------------
 
 main() {
   local command=""
@@ -608,7 +1536,7 @@ main() {
       --dry-run) dry_run=true; shift ;;
       --mode) mode_override="$2"; shift 2 ;;
       --config) config_name="$2"; shift 2 ;;
-      catch|config) command="$1"; shift ;;
+      catch|finalize|config) command="$1"; shift ;;
       *)
         if [ -z "$target" ]; then
           target="$1"
@@ -619,7 +1547,7 @@ main() {
   done
 
   if [ "$dry_run" = true ]; then
-    echo "🏁 Modo --dry-run ativado. Nenhum arquivo será escrito."
+    echo "Modo --dry-run ativado. Nenhum arquivo sera escrito."
     echo "  Comando: $command $target"
     exit 0
   fi
@@ -631,6 +1559,12 @@ main() {
         read -r -p "  Caminho do projeto alvo: " target
       fi
       cmd_catch "$target" "$mode_override"
+      ;;
+    finalize)
+      if [ -z "$target" ]; then
+        read -r -p "  Caminho do projeto alvo: " target
+      fi
+      cmd_finalize "$target"
       ;;
     *)
       if [ $# -eq 1 ] && [ -d "$1" ]; then

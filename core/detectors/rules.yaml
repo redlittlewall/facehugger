@@ -16,13 +16,13 @@ detectors:
     framework: NestJS
     confidence: high
 
-  - files: ["package.json", "svelte.config.js", "svelte.config.ts"]
+  - files: ["package.json", "svelte.config.*"]
     type: web-frontend
     language: TypeScript
     framework: SvelteKit
     confidence: high
 
-  - files: ["package.json", "next.config.js", "next.config.ts", "next.config.mjs"]
+  - files: ["package.json", "next.config.*"]
     type: web-frontend
     language: TypeScript
     framework: Next.js
@@ -45,6 +45,12 @@ detectors:
     language: PHP
     framework: "Laravel/Symfony"
     confidence: medium
+
+  - files: ["Dockerfile", "docker-compose.yml"]
+    type: infra-service
+    language: ""
+    framework: "Docker + Nginx"
+    confidence: high
 
   - files: ["nginx.conf"]
     type: infra-service
