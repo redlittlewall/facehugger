@@ -4,6 +4,14 @@ label: Backend API
 description: Configuração para APIs REST, GraphQL, ou serviços backend
 tags: [api, backend, server, service, microservice]
 
+domain_terms:
+  - Endpoint: "Ponto de entrada da API que expõe uma funcionalidade"
+  - Service: "Classe com lógica de negócio orquestrando repositórios"
+  - Repository: "Abstração sobre camada de dados com interface de coleção"
+  - DTO: "Objeto que carrega dados entre processos (tipicamente na camada de controller)"
+  - Entity: "Modelo de domínio com identidade e regras de negócio"
+  - Middleware: "Função que intercepta requisições para validação, logging, etc."
+
 rules:
   - book: clean-architecture
     version: mini

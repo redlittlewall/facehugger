@@ -1,26 +1,23 @@
 # {{PROJECT_NAME}} — Contexto
 
-> Linguagem ubíqua do domínio. Mantenha atualizado conforme o projeto evolui.
+> ⏳ **Ação necessária**: A IA deve preencher esta seção na Fase 1 do setup,
+> analisando os arquivos de configuração reais para extrair a terminologia da infraestrutura.
 
-## Linguagem
+## Termos de Infraestrutura
 
-**Proxy**:
-Um intermediário que recebe requisições e as encaminha para um upstream.
-_Avoid_: Gateway, Relay
+<!-- A IA deve listar aqui os termos reais de infraestrutura do projeto:
+     nomes de serviços, upstreams, health checks, certificados, etc. -->
 
-**Upstream**:
-O servidor de destino para onde as requisições são encaminhadas.
-_Avoid_: Backend, Target
+## Topologia
 
-**Health Check**:
-Um endpoint ou mecanismo que verifica se um serviço está operacional.
-_Avoid_: Ping, Status
+<!-- A IA deve documentar a topologia de rede/serviços identificada:
+     fluxo de requisições, balanceamento, regras de proxy, firewalls. -->
 
-## Regras
+## Comandos e Operações
 
-- Adicione termos específicos da sua infraestrutura
-- Evite conceitos genéricos de programação
+<!-- A IA deve listar comandos úteis para operação:
+     start/stop, deploy, rollback, logs, health check. -->
 
 ---
 
-_Gerado por 🎭 Facehugger. Preencha os termos do seu domínio._
+_Gerado por 🎭 Facehugger. A IA deve preencher com termos reais da infraestrutura na Fase 1._

@@ -4,6 +4,14 @@ label: Mobile App
 description: Configuração para apps mobile (Flutter, Kotlin, Swift)
 tags: [mobile, app, flutter, android, ios]
 
+domain_terms:
+  - Screen: "Tela completa do app composta por múltiplos widgets"
+  - Widget: "Componente de UI reutilizável (no Flutter)"
+  - State: "Estado que dirige a UI em um dado momento"
+  - BLoC: "Business Logic Component — padrão de gerenciamento de estado"
+  - Navigation: "Sistema de roteamento entre telas"
+  - UseCase: "Caso de uso que orquestra uma operação de negócio"
+
 rules:
   - book: clean-code
     version: mini

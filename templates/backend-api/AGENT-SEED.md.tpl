@@ -1,39 +1,66 @@
-# AGENT-SEED.md — {{PROJECT_NAME}}
+# 🎭 FACEHUGGER — SETUP ATIVO: {{PROJECT_NAME}}
 
-> Regras de governança do agente. Leia antes de qualquer alteração no código.
-> Gerado por 🎭 Facehugger
+> Este projeto está em configuração inicial.
+> **Execute cada fase em ordem e relate o progresso.**
+> Este bloco será removido ao final do setup pela Fase 3.
 
-## Filosofia do Projeto
+---
 
-{{PROJECT_PHILOSOPHY}}
+## 📋 Fase 1: Análise do Código Fonte
 
-## Regras de Engenharia
+Explore o projeto e gere conhecimento sobre ele antes de configurar.
+
+### 1A. Estrutura
+- [ ] Liste os diretórios principais (`src/`, `lib/`, `api/`, etc.)
+- [ ] Identifique o framework e versões (`package.json`, `pubspec.yaml`, etc.)
+- [ ] Identifique o banco de dados, cache e configurações de infraestrutura
+
+### 1B. Domínio
+- [ ] Examine as entidades/modelos para extrair termos de negócio reais
+- [ ] Identifique os fluxos principais (CRUD, autenticação, pagamento, etc.)
+- [ ] Gere/atualize `CONTEXT.md` com a linguagem ubíqua REAL do projeto
+
+### 1C. Arquitetura
+- [ ] Identifique o padrão arquitetural (MVC, Clean Architecture, Hexagonal, etc.)
+- [ ] Mapeie as camadas e dependências entre elas
+- [ ] Verifique se há testes e qual o framework usado
+- [ ] Identifique endpoints e contratos de API
+
+---
+
+## 📋 Fase 2: Configuração
+
+### 2A. Regras de Engenharia
+
+Aplique estas regras ao projeto (já incorporadas neste documento):
 
 {{INJECTED_RULES}}
 
-## Comportamento do Agente
+### 2B. Skills do Matt Pocock
 
-1. Antes de escrever código novo, leia `CONTEXT.md` e explore a base existente.
-2. Prefira separation of concerns: controllers lidam com HTTP, services com lógica de negócio.
-3. Validação nas boundaries (DTOs/Pipes), não espalhada pelos services.
-4. Repository pattern para acesso a dados — dependa de interfaces, não do ORM diretamente.
-5. Sempre adicione/atualize docstrings em qualquer classe ou função tocada.
-6. Testes novos acompanham código novo.
-7. Consulte o source real de dependências via open-source (Vercel):
-   ```bash
-   npx open-source <url-do-repo>
-   ```
-   Depois use `@open-source/<repo>` para referenciar no código.
-8. Use `npx repomix` para contexto completo do projeto quando necessário.
+Skills recomendadas para este projeto:
 
 {{AGENT_SKILLS_BLOCK}}
 
-## 🚧 MCP Servers — A configurar
+### 2C. Issue Tracker
 
-Este projeto pode se beneficiar de MCP Servers para:
-- Banco de dados (PostgreSQL, SQLite)
-- APIs externas
+Configure o issue tracker conforme o manifesto do projeto:
 
-Consulte https://modelcontextprotocol.io para configurar.
+{{TRACKER_CONFIG}}
+
+### 2D. MCP Servers
+
+Baseado na análise da Fase 1, identifique e configure MCP Servers para:
+- Banco de dados detectado (PostgreSQL, SQLite, MongoDB, etc.)
+- APIs externas identificadas
+- Ferramentas de deploy (Docker, Kubernetes, etc.)
+
+---
+
+## 📋 Fase 3: Finalização
+
+- [ ] Remova **este bloco de setup** do `CLAUDE.md` (tudo entre o primeiro `---` e o último `---`, inclusive)
+- [ ] Resuma o que foi configurado em um parágrafo
+- [ ] Aponte os próximos passos recomendados
 
 {{FOOTER}}

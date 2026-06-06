@@ -1,31 +1,23 @@
 # {{PROJECT_NAME}} — Contexto
 
-> Linguagem ubíqua do domínio. Mantenha atualizado conforme o projeto evolui.
+> ⏳ **Ação necessária**: A IA deve preencher esta seção na Fase 1 do setup,
+> analisando o código fonte real para extrair a linguagem ubíqua do domínio.
 
-## Linguagem
+## Termos do Domínio
 
-**Endpoint**:
-Um ponto de entrada da API que expõe uma funcionalidade específica.
-_Avoid_: Rota, URL
+<!-- A IA deve listar aqui os termos de negócio reais do projeto,
+     extraídos das entidades, modelos, serviços e DTOs. -->
 
-**Service**:
-Uma classe que contém lógica de negócio orquestrando repositórios e outras dependências.
-_Avoid_: Helper, Utils
+## Fluxos Principais
 
-**Repository**:
-Uma abstração sobre a camada de dados que provê uma interface de coleção para entidades.
-_Avoid_: DAO (prefira Repository)
+<!-- A IA deve documentar os fluxos de negócio identificados no código:
+     autenticação, CRUD de entidades, pagamentos, notificações, etc. -->
 
-**DTO** (Data Transfer Object):
-Um objeto que carrega dados entre processos, tipicamente na camada de controller.
-_Avoid_: Entity exposta, modelo bruto
+## Eventos e Comandos
 
-## Regras
-
-- Adicione termos específicos do domínio do projeto
-- Evite conceitos genéricos de programação
-- Seja opinativo: escolha o termo correto e liste sinônimos a evitar
+<!-- Se o projeto usa event-driven architecture ou CQRS,
+     liste aqui os Eventos de Domínio e Comandos identificados. -->
 
 ---
 
-_Gerado por 🎭 Facehugger. Preencha os termos do seu domínio._
+_Gerado por 🎭 Facehugger. A IA deve preencher com termos reais do domínio na Fase 1._

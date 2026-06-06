@@ -1,26 +1,23 @@
 # {{PROJECT_NAME}} — Contexto
 
-> Linguagem ubíqua do domínio. Mantenha atualizado conforme o projeto evolui.
+> ⏳ **Ação necessária**: A IA deve preencher esta seção na Fase 1 do setup,
+> analisando o código fonte real para extrair a linguagem ubíqua do domínio.
 
-## Linguagem
+## Termos do Domínio
 
-**Page**:
-Uma rota ou URL inteira do app.
-_Avoid_: Screen, View
+<!-- A IA deve listar aqui os termos de negócio reais do projeto,
+     extraídos das entidades, componentes e serviços. -->
 
-**Component**:
-Um bloco de construção de UI reutilizável.
-_Avoid_: Widget, Element
+## Fluxos Principais
 
-**Store**:
-Um container de estado global ou de página.
-_Avoid_: State, Context
+<!-- A IA deve documentar os fluxos de negócio identificados no código:
+     autenticação, navegação entre páginas, CRUD, formulários. -->
 
-## Regras
+## Páginas e Componentes
 
-- Adicione termos específicos do domínio do projeto
-- Evite conceitos genéricos de programação
+<!-- A IA deve listar as rotas/páginas principais e componentes reutilizáveis,
+     com seus propósitos e composição. -->
 
 ---
 
-_Gerado por 🎭 Facehugger. Preencha os termos do seu domínio._
+_Gerado por 🎭 Facehugger. A IA deve preencher com termos reais do domínio na Fase 1._

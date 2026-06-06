@@ -1,26 +1,23 @@
 # {{PROJECT_NAME}} — Contexto
 
-> Linguagem ubíqua do domínio. Mantenha atualizado conforme o projeto evolui.
+> ⏳ **Ação necessária**: A IA deve preencher esta seção na Fase 1 do setup,
+> analisando o código fonte real para extrair a linguagem ubíqua do domínio.
 
-## Linguagem
+## Termos do Domínio
 
-**Screen**:
-Uma tela completa do app, composta por múltiplos widgets.
-_Avoid_: Page, View
+<!-- A IA deve listar aqui os termos de negócio reais do projeto,
+     extraídos das entidades, modelos e fluxos de navegação. -->
 
-**Widget**:
-Um componente de UI reutilizável.
-_Avoid_: Component, Element
+## Fluxos Principais
 
-**State**:
-O estado que dirige a UI em um dado momento.
-_Avoid_: Data, Model
+<!-- A IA deve documentar os fluxos de negócio identificados no código:
+     login, onboarding, features core, navegação entre telas. -->
 
-## Regras
+## Telas e Widgets
 
-- Adicione termos específicos do domínio do projeto
-- Evite conceitos genéricos de programação
+<!-- A IA deve listar as telas principais e widgets reutilizáveis,
+     com seus propósitos e relacionamentos. -->
 
 ---
 
-_Gerado por 🎭 Facehugger. Preencha os termos do seu domínio._
+_Gerado por 🎭 Facehugger. A IA deve preencher com termos reais do domínio na Fase 1._

@@ -4,6 +4,13 @@ label: Infra/Serviço
 description: Configuração para gateways, proxies, serviços de infraestrutura
 tags: [infra, devops, nginx, proxy, gateway]
 
+domain_terms:
+  - Proxy: "Intermediário que recebe requisições e as encaminha para upstream"
+  - Upstream: "Servidor de destino para onde as requisições são encaminhadas"
+  - Health Check: "Endpoint ou mecanismo que verifica disponibilidade de serviço"
+  - Load Balancer: "Distribuidor de tráfego entre múltiplos servidores"
+  - Reverse Proxy: "Proxy que atua em nome do servidor, não do cliente"
+
 rules:
   - book: release-it
     version: mini

@@ -4,6 +4,14 @@ label: Web Frontend
 description: Configuração para SPAs, SSR, landing pages
 tags: [web, frontend, spa, react, svelte, nextjs]
 
+domain_terms:
+  - Page: "Rota ou URL completa do app"
+  - Component: "Bloco de construção de UI reutilizável"
+  - Store: "Container de estado global ou de página"
+  - Hook: "Função que gerencia estado ou efeito colateral"
+  - Layout: "Estrutura de página compartilhada entre rotas"
+  - Route: "Mapeamento entre URL e componente/página"
+
 rules:
   - book: the-pragmatic-programmer
     version: mini

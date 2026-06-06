@@ -4,6 +4,14 @@ label: Data Pipeline
 description: Configuração para ETLs, processamento de dados, filas
 tags: [data, etl, pipeline, streaming, batch]
 
+domain_terms:
+  - Pipeline: "Sequência de etapas de processamento de dados"
+  - Source: "Origem dos dados (banco, API, arquivo, stream)"
+  - Sink: "Destino dos dados processados"
+  - Transformer: "Etapa que modifica ou enriquece os dados"
+  - Batch: "Processamento de dados em lotes em intervalo programado"
+  - Stream: "Processamento contínuo de dados em tempo real"
+
 rules:
   - book: designing-data-intensive-applications
     version: mini

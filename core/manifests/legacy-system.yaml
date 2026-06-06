@@ -4,6 +4,13 @@ label: Sistema Legado
 description: Configuração para sistemas legados em qualquer stack
 tags: [legacy, refactoring, migration, maintenance]
 
+domain_terms:
+  - Legacy Module: "Módulo existente que pode precisar de refatoração"
+  - Technical Debt: "Áreas do código que precisam de melhoria estrutural"
+  - Migration Target: "Estado futuro desejado para o sistema"
+  - Deprecated API: "Interface antiga que deve ser substituída"
+  - Integration Test: "Teste que valida a interação entre componentes legados"
+
 rules:
   - book: working-effectively-with-legacy-code
     version: full

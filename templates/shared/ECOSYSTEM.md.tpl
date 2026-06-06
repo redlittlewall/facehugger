@@ -1,8 +1,11 @@
 # 🌐 {{ECOSYSTEM_NAME}} — Ecossistema
 
-> Visão geral da arquitetura multi-projeto.
-> Mantenha atualizado conforme o ecossistema evolui.
-> Gerado por 🎭 Facehugger
+> ⏳ **Ação da IA**: Preencha as seções marcadas com 🤖 analisando o código fonte
+> real de cada projeto (docker-compose, Makefiles, configs, etc.).
+>
+> Gerado por 🎭 Facehugger. Mantenha atualizado conforme o ecossistema evolui.
+
+---
 
 ## Stack
 
@@ -10,7 +13,10 @@
 |---------|------|-----------|-----------|
 {{STACK_TABLE}}
 
-## Topologia de Serviços
+## 🤖 Topologia de Serviços
+
+<!-- A IA deve gerar este diagrama baseado na arquitetura real do ecossistema.
+     Leia docker-compose, kubernetes manifests, ou configurações de proxy. -->
 
 ```
 {{ARCHITECTURE_DIAGRAM}}
@@ -20,21 +26,20 @@
 
 {{DEPENDENCIES_LIST}}
 
-Exemplo:
-- `{{SUB_API}}` é consumido por `{{SUB_APP}}` e `{{SUB_WEB}}`
-- `{{SUB_WEB}}` faz SSR e consome `{{SUB_API}}` diretamente
-- `{{SUB_NGINX}}` faz proxy reverso para `{{SUB_API}}` e `{{SUB_WEB}}`
+## 🤖 Guia de Desenvolvimento Local
 
-## Desenvolvimento Local
+<!-- A IA deve preencher esta seção lendo docker-compose, Makefiles e
+     scripts de setup de cada projeto. Inclua comandos reais para:
+     - Iniciar cada serviço individualmente
+     - Rodar o ecossistema completo
+     - Executar testes
+     - Acessar logs e depurar -->
 
-{{LOCAL_DEV_GUIDE}}
+### Serviços e Comandos
 
-Para rodar o ecossistema completo:
-
-```bash
-# A partir da raiz do ecossistema
-# (adicione aqui os comandos para cada serviço)
-```
+| Projeto | Como iniciar |
+|---------|-------------|
+<!-- A IA preenche esta tabela com comandos reais de cada projeto -->
 
 ## Projetos
 
@@ -43,13 +48,20 @@ Para rodar o ecossistema completo:
 Cada projeto tem seu próprio `CLAUDE.md` e `CONTEXT.md` com regras de engenharia
 e linguagem ubíqua específicas.
 
-## Portas e URLs
+## 🤖 Portas e URLs
+
+<!-- A IA deve preencher as portas reais lendo docker-compose, configurações
+     de servidor e anotações nos projetos. -->
 
 | Projeto | Porta | URL |
 |---------|-------|-----|
 {{PORTS_URLS}}
 
+## 🤖 Fluxos de Dados
+
+<!-- A IA deve documentar os fluxos de dados entre serviços baseado no
+     código real: chamadas HTTP, mensageria, eventos, streams, etc. -->
+
 ---
 
-> Este arquivo foi gerado por 🎭 Facehugger.
-> Edite livremente — ele é seu a partir de agora.
+> Edite livremente — este arquivo é seu a partir de agora.

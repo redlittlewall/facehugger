@@ -1,6 +1,12 @@
 # 🎭 Facehugger — local overrides
 core/config.local.yaml
 
+# 🎭 Facehugger — generated files (silent mode)
+AGENT-SEED.md
+CLAUDE.md
+CONTEXT.md
+docs/agents/
+
 # OS files
 .DS_Store
 Thumbs.db

@@ -1031,10 +1031,17 @@ cmd_catch_ecosystem() {
       local footer=""
       [ -f "$FACEHUGGER_DIR/templates/shared/footer.md" ] && footer=$(cat "$FACEHUGGER_DIR/templates/shared/footer.md")
 
+      local tracker_config_block=""
+      case "$tracker" in
+        github) tracker_config_block="Configure GitHub Issues para rastrear tarefas e bugs. Use labels, milestones e templates de issue." ;;
+        gitlab) tracker_config_block="Configure GitLab Issues para rastrear tarefas e bugs. Use labels, milestones e templates de issue." ;;
+        *)      tracker_config_block="Use issues locais em markdown na pasta \`.issues/\`. O formato padrão é:\n\n\`\`\`markdown\n# Título da Issue\n\n**Tipo**: bug | feature | tarefa\n**Prioridade**: alta | media | baixa\n**Descrição**: ...\n\`\`\`" ;;
+      esac
+
       local seed_content="${template_content//\{\{PROJECT_NAME\}\}/$subname}"
-      seed_content="${seed_content//\{\{PROJECT_PHILOSOPHY\}\}/Projeto integrante do ecossistema \`${ecosystem_name}\`}"
       seed_content="${seed_content//\{\{INJECTED_RULES\}\}/$injected_rules}"
       seed_content="${seed_content//\{\{AGENT_SKILLS_BLOCK\}\}/$selected_skills_block}"
+      seed_content="${seed_content//\{\{TRACKER_CONFIG\}\}/$tracker_config_block}"
       seed_content="${seed_content//\{\{FOOTER\}\}/$footer}"
       echo "$seed_content" > "$agent_seed_file"
     else
@@ -1106,7 +1113,9 @@ EOF
         {
           echo ""
           echo "# Facehugger generated"
+          echo "# AGENT-SEED.md e derivados (CLAUDE.md, .cursorrules, etc.)"
           echo "AGENT-SEED.md"
+          echo "CLAUDE.md"
           echo "CONTEXT.md"
           echo "# End Facehugger"
         } >> "$gitignore_file" 2>/dev/null || true
@@ -1362,9 +1371,16 @@ cmd_catch() {
     local footer=""
     [ -f "$FACEHUGGER_DIR/templates/shared/footer.md" ] && footer=$(cat "$FACEHUGGER_DIR/templates/shared/footer.md")
 
+    local tracker_config_block=""
+    case "$tracker" in
+      github) tracker_config_block="Configure GitHub Issues para rastrear tarefas e bugs. Use labels, milestones e templates de issue." ;;
+      gitlab) tracker_config_block="Configure GitLab Issues para rastrear tarefas e bugs. Use labels, milestones e templates de issue." ;;
+      *)      tracker_config_block="Use issues locais em markdown na pasta .issues/. O formato padrao e: markdown\n\n```markdown\n# Titulo da Issue\n\n**Tipo**: bug | feature | tarefa\n**Prioridade**: alta | media | baixa\n**Descricao**: ...\n```" ;;
+    esac
     local seed_content="${template_content//\{\{PROJECT_NAME\}\}/$target_name}"
     seed_content="${seed_content//\{\{INJECTED_RULES\}\}/$injected_rules}"
     seed_content="${seed_content//\{\{AGENT_SKILLS_BLOCK\}\}/$selected_skills_block}"
+    seed_content="${seed_content//\{\{TRACKER_CONFIG\}\}/$tracker_config_block}"
     seed_content="${seed_content//\{\{FOOTER\}\}/$footer}"
     echo "$seed_content" > "$agent_seed_file"
   else
@@ -1440,7 +1456,9 @@ EOF
       {
         echo ""
         echo "# Facehugger generated"
+        echo "# AGENT-SEED.md e derivados (CLAUDE.md, .cursorrules, etc.)"
         echo "AGENT-SEED.md"
+        echo "CLAUDE.md"
         echo "CONTEXT.md"
         echo "docs/agents/"
         echo "# End Facehugger"
